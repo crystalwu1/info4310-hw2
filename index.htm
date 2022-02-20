@@ -11,8 +11,18 @@
     
     <body>
         <!-- svg -->
-        <svg id="viz1" height="400" width="400" style="margin:20px"></svg>
+        <svg id="edu_viz" height="400" width="400" style="margin:20px"></svg>
+        <svg id="bg_viz" height="400" width="400" style="margin:20px"></svg>
+
         <script>
+            // build map
+        const requestMap = async function() {
+                // load dataset
+                const college_csv = await d3.csv("CollegeDistance.csv");
+                console.log(college_csv);
+
+            };
+            requestMap();
 
         </script>
     </body>
