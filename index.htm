@@ -16,13 +16,46 @@
 
         <script>
             // build map
-        const requestMap = async function() {
+        const loadScatter = async function() {
+
+                // create scatter
+                const edu_scatter = d3.select("svg#edu_viz");
+                const bg_scatter = d3.select("svg#bg_viz");
+
+                // width of both scatter plots are the same, given that their sizes are the same
+                // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
+                const width = edu_scatter.attr("width");
+                const height = edu_scatter.attr("height");
+                const margin =  {top: 15, right: 15, bottom: 40, left: 50};
+                const chartWidth = width - margin.left - margin.right;
+                const chartHeight = height - margin.top - margin.right;
+
+                let annotations = edu_scatter.append("g").attr("id","annotations");
+                let chartArea = edu_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");  
+                    
                 // load dataset
                 const college_csv = await d3.csv("CollegeDistance.csv");
                 console.log(college_csv);
 
+                // filter dataset
+                // change types as necessary
+                college_csv.forEach((d, i) => {
+                    d['score'] = Number(d['score']);
+                    d['urban'] = Number(d['urban']);
+                    d['unemp'] = Number(d['unemp']);
+                    d['wage'] = Number(d['wage']);
+                    d['distance'] = Number(d['distance']);
+                    d['tuition'] = Number(d['tuition']);
+                    d['education'] = Number(d['education']);
+                });
+
+                // remove rows where education is not twelve (exclude non-seniors)
+                college_filtered = college_csv.filter((d) => d["education"] === 12 );
+                console.log(college_filtered);
+s
             };
-            requestMap();
+            loadScatter();
 
         </script>
     </body>
