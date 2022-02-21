@@ -11,8 +11,8 @@
     
     <body>
         <!-- svg -->
-        <svg id="edu_viz" height="400" width="400" style="margin:20px"></svg>
-        <svg id="bg_viz" height="400" width="400" style="margin:20px"></svg>
+        <svg id="edu_viz" height="500" width="500" style="margin:20px"></svg>
+        <svg id="bg_viz" height="500" width="500" style="margin:20px"></svg>
 
         <script>
             // build map
@@ -58,7 +58,8 @@
                 const scoreExtent = d3.extent(college_filtered, d => d['score']);
                 const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
                 const distanceExtent = d3.extent(college_filtered, d => d['distance']);
-                const distanceScale = d3.scaleLog().domain(distanceExtent).range([chartHeight, 0]);
+                // tried doing a log scale but didn't return valid numbers
+                const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
                 let leftAxis = d3.axisLeft(distanceScale)
                     .tickFormat(d3.format(""));
@@ -87,6 +88,19 @@
                 .attr("class", "x gridlines")
                 .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
                 .call(bottomGridlines);
+
+            let circles = chartArea.selectAll("circle.point").data(college_filtered)
+                .join(enter => enter.append("circle")
+                    .attr("class","point")
+                    .attr("opacity", 1)
+                )
+                .attr("cx", d => scoreScale(d['score']))
+                .attr("cy", d => distanceScale(d['distance']+1))
+                .attr("fill", "black");
+                // .attr("r", d => imdbScale(d['imdb_rating']))
+                // .attr("fill", d => genreScale(d['Main_Genre']) ) 
+                // .attr("label", d => d["title"])
+                // .attr("genre", d => d["Main_Genre"]);
             };
             loadScatter();
 
