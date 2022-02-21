@@ -33,8 +33,12 @@
                 const chartWidth = width - margin.left - margin.right;
                 const chartHeight = height - margin.top - margin.right;
 
-                let annotations = edu_scatter.append("g").attr("id","annotations");
-                let chartArea = edu_scatter.append("g").attr("id","points")
+                let edu_annotations = edu_scatter.append("g").attr("id","annotations");
+                let edu_chartArea = edu_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");  
+
+                let bg_annotations = bg_scatter.append("g").attr("id","annotations");
+                let bg_chartArea = bg_scatter.append("g").attr("id","points")
                     .attr("transform","translate("+margin.left+","+margin.top+")");  
 
                 // load dataset
@@ -60,6 +64,8 @@
                 // create extent
                 const scoreExtent = d3.extent(college_filtered, d => d['score']);
                 const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
+                const wageExtent = d3.extent(college_filtered, d => d['wage']);
+                const wageScale = d3.scaleLinear().domain(wageExtent).range([0, chartWidth]);
                 const distanceExtent = d3.extent(college_filtered, d => d['distance']);
                 // tried doing a log scale but didn't return valid numbers
                 const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
@@ -73,38 +79,71 @@
                 let leftGridlines = d3.axisLeft(distanceScale)
                     .tickSize(-chartWidth-10)
                     .tickFormat("");
-                let bottomAxis = d3.axisBottom(scoreScale)
+                let edu_bottomAxis = d3.axisBottom(scoreScale)
                     .tickFormat(d3.format("~f"));  // exact value without commas
-                let bottomGridlines = d3.axisBottom(scoreScale)
+                let edu_bottomGridlines = d3.axisBottom(scoreScale)
+                    .tickSize(-chartHeight-10)
+                    .tickFormat("");
+
+                let bg_bottomAxis = d3.axisBottom(wageScale)
+                    .tickFormat(d3.format("~f"));  // exact value without commas
+                let bg_bottomGridlines = d3.axisBottom(wageScale)
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
                 
             // create axes and gridlines
-            annotations.append("g")
+            edu_annotations.append("g")
                 .attr("class", "y axis")
                 .attr("transform",`translate(${margin.left-10},${margin.top})`)
                 .call(leftAxis);
-            annotations.append("g")
+            edu_annotations.append("g")
                 .attr("class", "y gridlines")
                 .attr("transform",`translate(${margin.left-10},${margin.top})`)
                 .call(leftGridlines);
-            annotations.append("g")
+            edu_annotations.append("g")
                 .attr("class", "x axis")
                 .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(bottomAxis);
-            annotations.append("g")
+                .call(edu_bottomAxis);
+            edu_annotations.append("g")
                 .attr("class", "x gridlines")
                 .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(bottomGridlines);
+                .call(edu_bottomGridlines);
+
+            bg_annotations.append("g")
+                .attr("class", "y axis")
+                .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                .call(leftAxis);
+            bg_annotations.append("g")
+                .attr("class", "y gridlines")
+                .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                .call(leftGridlines);
+            bg_annotations.append("g")
+                .attr("class", "x axis")
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .call(bg_bottomAxis);
+            bg_annotations.append("g")
+                .attr("class", "x gridlines")
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .call(bg_bottomGridlines);
 
             // add circles
-            let circles = chartArea.selectAll("circle.point").data(college_filtered)
+            let edu_circles = edu_chartArea.selectAll("circle.point").data(college_filtered)
                 .join(enter => enter.append("circle")
                     .attr("class","point")
                     .attr("opacity", 0.8)
                     )
                 .attr("cx", d => scoreScale(d['score']))
-                .attr("cy", d => distanceScale(d['distance']+1))
+                .attr("cy", d => distanceScale(d['distance']))
+                .attr("r", 2)
+                .attr("fill", d => colorScale(d['gender']));
+
+            let bg_circles = bg_chartArea.selectAll("circle.point").data(college_filtered)
+                .join(enter => enter.append("circle")
+                    .attr("class","point")
+                    .attr("opacity", 0.8)
+                    )
+                .attr("cx", d => wageScale(d['wage']))
+                .attr("cy", d => distanceScale(d['distance']))
                 .attr("r", 2)
                 .attr("fill", d => colorScale(d['gender']));
             };
