@@ -11,8 +11,7 @@
     
     <body>
         <!-- buttons -->
-        <button type="button">low</button>
-        <button type="button">high</button>
+        <select id="selectButton"></select>
 
         <h1>Scores vs. Distance</h1>
 
@@ -68,6 +67,19 @@
                 college_filtered = college_csv.filter((d) => d["education"] === 12 );
                 console.log(college_filtered);
 
+                // group income values
+                // code found from https://github.com/d3/d3-array/blob/main/README.md#group
+                let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
+
+                // add options to the select button
+                d3.select("#selectButton")
+                    .selectAll('myOptions')
+     	            .data(incomeKeys)
+                    .enter()
+    	            .append('option')
+                    .text(function (d) { return d; }) // text showed in the menu
+                    .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
                 // create extent
                 const scoreExtent = d3.extent(college_filtered, d => d['score']);
                 const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
@@ -98,61 +110,84 @@
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
                 
-            // create axes and gridlines
-            edu_annotations.append("g")
-                .attr("class", "y axis")
-                .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                .call(leftAxis);
-            edu_annotations.append("g")
-                .attr("class", "y gridlines")
-                .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                .call(leftGridlines);
-            edu_annotations.append("g")
-                .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(edu_bottomAxis);
-            edu_annotations.append("g")
-                .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(edu_bottomGridlines);
+                // create axes and gridlines
+                edu_annotations.append("g")
+                    .attr("class", "y axis")
+                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                    .call(leftAxis);
+                edu_annotations.append("g")
+                    .attr("class", "y gridlines")
+                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                    .call(leftGridlines);
+                edu_annotations.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                    .call(edu_bottomAxis);
+                edu_annotations.append("g")
+                    .attr("class", "x gridlines")
+                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                    .call(edu_bottomGridlines);
 
-            bg_annotations.append("g")
-                .attr("class", "y axis")
-                .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                .call(leftAxis);
-            bg_annotations.append("g")
-                .attr("class", "y gridlines")
-                .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                .call(leftGridlines);
-            bg_annotations.append("g")
-                .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(bg_bottomAxis);
-            bg_annotations.append("g")
-                .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                .call(bg_bottomGridlines);
+                bg_annotations.append("g")
+                    .attr("class", "y axis")
+                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                    .call(leftAxis);
+                bg_annotations.append("g")
+                    .attr("class", "y gridlines")
+                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                    .call(leftGridlines);
+                bg_annotations.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                    .call(bg_bottomAxis);
+                bg_annotations.append("g")
+                    .attr("class", "x gridlines")
+                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                    .call(bg_bottomGridlines);
 
-            // add circles
-            let edu_circles = edu_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => scoreScale(d['score']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
+                // function to create circles
+                function createCircles(chartArea, data, xScale, xCol) {
+                    let circles = chartArea.selectAll("circle.point").data(data)
+                    .join(enter => enter.append("circle")
+                        .attr("class","point")
+                        .attr("opacity", 0.8)
+                        )
+                    .attr("cx", d => xScale(d[xCol]))
+                    .attr("cy", d => distanceScale(d['distance']))
+                    .attr("r", 2)
+                    .attr("fill", d => colorScale(d['gender']));
+                }
 
-            let bg_circles = bg_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => wageScale(d['wage']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
+                createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
+                createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
+            
+                // code inspired from https://www.d3-graph-gallery.com/graph/line_filter.html
+                // update scatter based on selection
+                function update(selectedGroup) {
+                    // filter dataset based on button selection
+                    var filtered = college_filtered.filter(function(d){return d.income == selectedGroup})
+
+                    // give new data to circles
+                    createCircles(edu_chartArea, filtered, scoreScale, 'score')
+                    createCircles(bg_chartArea, filtered, wageScale, 'wage')
+                    // edu_circles
+                    //     .datum(filtered)
+                    //     .transition()
+                    //     .duration(1000)
+                    //     .attr("d", d3.circle()
+                    //         .x(function(d) { return scoreScale(d.score) })
+                    //         .y(function(d) { return distanceScale(d.distance) })
+                    //     )
+                    //     // .attr("stroke", function(d){ return myColor(selectedGroup) })
+                }
+
+                // when an option is selected, call update 
+                d3.select("#selectButton").on("change", function(d) {
+                    // recover the option that has been chosen
+                    var selectedOption = d3.select(this).property("value")
+                    // run the updateChart function with this selected option
+                    update(selectedOption)
+                })
             };
             loadScatter();
 
