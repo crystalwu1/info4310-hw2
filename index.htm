@@ -11,16 +11,19 @@
     
     <body>
         <!-- svg -->
-        <svg id="edu_viz" height="500" width="500" style="margin:20px"></svg>
-        <svg id="bg_viz" height="500" width="500" style="margin:20px"></svg>
+        <h1>Scores vs. Distance</h1>
+        <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
+
+        <h1>Background vs. Distance</h2>
+        <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
 
         <script>
             // build map
         const loadScatter = async function() {
 
                 // create scatter
-                const edu_scatter = d3.select("svg#edu_viz");
-                const bg_scatter = d3.select("svg#bg_viz");
+                const edu_scatter = d3.select("#edu_viz");
+                const bg_scatter = d3.select("#bg_viz");
 
                 // width of both scatter plots are the same, given that their sizes are the same
                 // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
@@ -61,6 +64,10 @@
                 // tried doing a log scale but didn't return valid numbers
                 const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
+                // create custom color scale for gender
+                var colors = ["red", "blue"];
+                const colorScale = d3.scaleOrdinal().domain(["gender"]).range(colors);
+
                 let leftAxis = d3.axisLeft(distanceScale)
                     .tickFormat(d3.format(""));
                 let leftGridlines = d3.axisLeft(distanceScale)
@@ -71,7 +78,8 @@
                 let bottomGridlines = d3.axisBottom(scoreScale)
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
-      
+                
+            // create axes and gridlines
             annotations.append("g")
                 .attr("class", "y axis")
                 .attr("transform",`translate(${margin.left-10},${margin.top})`)
@@ -82,25 +90,23 @@
                 .call(leftGridlines);
             annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
                 .call(bottomAxis);
             annotations.append("g")
                 .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
                 .call(bottomGridlines);
 
+            // add circles
             let circles = chartArea.selectAll("circle.point").data(college_filtered)
                 .join(enter => enter.append("circle")
                     .attr("class","point")
-                    .attr("opacity", 1)
-                )
+                    .attr("opacity", 0.8)
+                    )
                 .attr("cx", d => scoreScale(d['score']))
                 .attr("cy", d => distanceScale(d['distance']+1))
-                .attr("fill", "black");
-                // .attr("r", d => imdbScale(d['imdb_rating']))
-                // .attr("fill", d => genreScale(d['Main_Genre']) ) 
-                // .attr("label", d => d["title"])
-                // .attr("genre", d => d["Main_Genre"]);
+                .attr("r", 2)
+                .attr("fill", d => colorScale(d['gender']));
             };
             loadScatter();
 
