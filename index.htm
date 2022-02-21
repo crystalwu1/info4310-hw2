@@ -33,7 +33,7 @@
                 let annotations = edu_scatter.append("g").attr("id","annotations");
                 let chartArea = edu_scatter.append("g").attr("id","points")
                     .attr("transform","translate("+margin.left+","+margin.top+")");  
-                    
+
                 // load dataset
                 const college_csv = await d3.csv("CollegeDistance.csv");
                 console.log(college_csv);
@@ -53,7 +53,40 @@
                 // remove rows where education is not twelve (exclude non-seniors)
                 college_filtered = college_csv.filter((d) => d["education"] === 12 );
                 console.log(college_filtered);
-s
+
+                // create extent
+                const scoreExtent = d3.extent(college_filtered, d => d['score']);
+                const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
+                const distanceExtent = d3.extent(college_filtered, d => d['distance']);
+                const distanceScale = d3.scaleLog().domain(distanceExtent).range([chartHeight, 0]);
+
+                let leftAxis = d3.axisLeft(distanceScale)
+                    .tickFormat(d3.format(""));
+                let leftGridlines = d3.axisLeft(distanceScale)
+                    .tickSize(-chartWidth-10)
+                    .tickFormat("");
+                let bottomAxis = d3.axisBottom(scoreScale)
+                    .tickFormat(d3.format("~f"));  // exact value without commas
+                let bottomGridlines = d3.axisBottom(scoreScale)
+                    .tickSize(-chartHeight-10)
+                    .tickFormat("");
+      
+            annotations.append("g")
+                .attr("class", "y axis")
+                .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                .call(leftAxis);
+            annotations.append("g")
+                .attr("class", "y gridlines")
+                .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                .call(leftGridlines);
+            annotations.append("g")
+                .attr("class", "x axis")
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                .call(bottomAxis);
+            annotations.append("g")
+                .attr("class", "x gridlines")
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                .call(bottomGridlines);
             };
             loadScatter();
 
