@@ -8,21 +8,35 @@
     <style>
 
     </style>
-    
+
     <body>
         <!-- buttons -->
-        <button type="button">low</button>
-        <button type="button">high</button>
+        <div id="wrapper" style="display:flex; margin: 2%;">
+          <div  style="width: 50%; margin: 3%">
+            <button type="button">low</button>
+            <button type="button">high</button>
 
-        <h1>Scores vs. Distance</h1>
+            <h1>Scores vs. Distance</h1>
 
-        <!-- svg -->
-        <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
+            <!-- svg -->
+            <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
 
-        <h1>Background vs. Distance</h2>
+            <h1>Background vs. Distance</h2>
 
-        <!-- svg -->
-        <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
+            <!-- svg -->
+            <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
+          </div>
+          <div id="side" style="width: 40%; height: 90%; margin: 3%">
+            <h2>Among students with .... test scores from .... counties , ....</h2>
+            <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
+            <p>Parents Attended College</p>
+            <svg id="ped_viz" height="100" width="400" style="margin:20px"></svg>
+            <div id="my_dataviz"></div>
+            <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
+            <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
+          </div>
+        </div>
+
 
         <script>
             // build map
@@ -31,6 +45,10 @@
                 // create scatter
                 const edu_scatter = d3.select("#edu_viz");
                 const bg_scatter = d3.select("#bg_viz");
+                const eth_scatter = d3.select("#eth_viz");
+                const ped_scatter = d3.select("#ped_viz");
+                const home_scatter = d3.select("#home_viz");
+                const inc_scatter = d3.select("#inc_viz");
 
                 // width of both scatter plots are the same, given that their sizes are the same
                 // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
@@ -42,16 +60,33 @@
 
                 let edu_annotations = edu_scatter.append("g").attr("id","annotations");
                 let edu_chartArea = edu_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");  
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
 
                 let bg_annotations = bg_scatter.append("g").attr("id","annotations");
                 let bg_chartArea = bg_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");  
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
+
+                let eth_annotations = eth_scatter.append("g").attr("id","annotations");
+                let eth_chartArea = eth_scatter.append("g").attr("id","ethpoints")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
+
+                let ped_annotations = ped_scatter.append("g").attr("id","annotations");
+                let ped_chartArea = ped_scatter.append("g").attr("id","points")
+
+                let home_annotations = home_scatter.append("g").attr("id","annotations");
+                let home_chartArea = home_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
+
+                let inc_annotations = inc_scatter.append("g").attr("id","annotations");
+                let inc_chartArea = inc_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+margin.left+","+margin.top+")");
 
                 // load dataset
                 const college_csv = await d3.csv("CollegeDistance.csv");
                 console.log(college_csv);
 
+                let scores = []
+                let backgr = []
                 // filter dataset
                 // change types as necessary
                 college_csv.forEach((d, i) => {
@@ -62,7 +97,20 @@
                     d['distance'] = Number(d['distance']);
                     d['tuition'] = Number(d['tuition']);
                     d['education'] = Number(d['education']);
+                    scores.push(Number(d['score']));
+                    backgr.push(Number(d['wage']));
                 });
+
+                scores = scores.sort()
+                backgr = backgr.sort()
+
+                //lm is 33%, mh 66%. use extent below for min/max
+                scores_lm = d3.quantile(scores, 0.33)
+                scores_mh = d3.quantile(scores, 0.66)
+                backgr_lm = d3.quantile(backgr, 0.33)
+                backgr_mh = d3.quantile(backgr, 0.66)
+
+                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh)
 
                 // remove rows where education is not twelve (exclude non-seniors)
                 college_filtered = college_csv.filter((d) => d["education"] === 12 );
@@ -76,6 +124,7 @@
                 const distanceExtent = d3.extent(college_filtered, d => d['distance']);
                 // tried doing a log scale but didn't return valid numbers
                 const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
+
 
                 // create custom color scale for gender
                 var colors = ["red", "blue"];
@@ -97,7 +146,7 @@
                 let bg_bottomGridlines = d3.axisBottom(wageScale)
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
-                
+
             // create axes and gridlines
             edu_annotations.append("g")
                 .attr("class", "y axis")
@@ -153,6 +202,156 @@
                 .attr("cy", d => distanceScale(d['distance']))
                 .attr("r", 2)
                 .attr("fill", d => colorScale(d['gender']));
+
+            //Side Bar Graphs
+            var eth = {"hispanic": 0, "afam": 0, "other": 0}
+            var inc = {"low": 0, "high": 0}
+            var home = {"yes": 0, "no": 0}
+            var ped = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
+
+            college_filtered.forEach((d, i) => {
+                eth[d["ethnicity"]] += 1;
+                inc[d["income"]] += 1;
+                home[d["home"]] += 1;
+                if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
+                  ped["both"] += 1
+                  ped["mom"] += 1
+                  ped["dad"] += 1
+                } else if (d["fcollege"] == "yes") {
+                  ped["dad"] += 1
+                } else if (d["mcollege"] == "yes") {
+                  ped["mom"] += 1
+                }
+                else {
+                  ped["neither"] += 1
+                }
+            });
+
+            console.log(eth)
+            console.log(ped)
+            console.log(home)
+            console.log(inc)
+
+            let side = d3.select("#side")
+            side.append("br")
+            side.append("text").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}%'s families own homes`)
+            side.append("br")
+            // side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% have parents that attended college`)
+            side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% are from low income families`)
+
+            //PARENT EDUCATION HORIZONTAL BAR CHART
+            let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
+            let both = ped["both"]
+            let none = ped["neither"]
+            let pedScale = d3.scaleLinear().domain([0,none + one + both]).range([0,ped_scatter.attr("width") - margin.left - margin.right])
+
+            function ped_start(section) {
+              if (section == "none") {
+                return pedScale(0)
+              } else if (section == "one") {
+                return pedScale(none)
+              } else {
+                return pedScale(none + one)
+              }
+            }
+
+            function ped_length(section, ped) {
+              let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
+              let both = ped["both"]
+              let none = ped["neither"]
+              if (section == "none") {
+                return pedScale(none)
+              } else if (section == "one") {
+                return pedScale(one)
+              } else {
+                return pedScale(both)
+              }
+            }
+            let ped_rect = ped_chartArea.selectAll("rect.all").data(["none", "one", "both"])
+                .join("rect")
+                .attr("class", "all")
+                .attr("x", d => ped_start(d))
+                .attr("y", 0)
+                .attr("width", d => ped_length(d, ped))
+                .attr("height", 50)
+                .attr("fill", "coral")
+                .attr("stroke", 'black')
+                .attr("id", d => d);
+
+            var ped2 = {"mom": 30, "dad": 30, "both": 20, "neither": 800}
+            let ped_filter = ped_chartArea.selectAll("rect.filteer").data(["none", "one", "both"])
+                .join("rect")
+                .attr("class", "filter")
+                .attr("x", d => ped_start(d))
+                .attr("y", 0)
+                .attr("width", d => ped_length(d, ped2))
+                .attr("height", 50)
+                .attr("fill", "pink")
+                .attr("id", d => d);
+
+            //ETHNICITY BAR CHART
+            ethdata = Object.entries(eth)
+
+            let ethChartWidth = Number(eth_scatter.attr("width"))- margin.left - margin.right;
+            let ethChartHeight = Number(eth_scatter.attr("height"))- margin.top - margin.bottom;
+            const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([0, ethChartWidth/2, ethChartWidth]);
+
+            const freqExtent = d3.extent(Object.values(eth));
+            const freqScale = d3.scaleLinear().domain([0, freqExtent[1]]).range([ethChartHeight, 0]);
+
+            let ethleftAxis = d3.axisLeft(freqScale)
+            let ethleftGridlines = d3.axisLeft(freqScale)
+                                  .tickSize(-ethChartWidth-10)
+                                  .tickFormat("")
+            eth_annotations.append("g")
+              .attr("class", "y axis")
+              .attr("transform",`translate(${margin.left-10},${margin.top})`)
+              .call(ethleftAxis)
+            eth_annotations.append("g")
+              .attr("class", "y gridlines")
+              .attr("transform",`translate(${margin.left-10},${margin.top})`)
+              .call(ethleftGridlines);
+
+              // X axis
+              let ethbottomAxis = d3.axisBottom(ethScale)
+              let ethbottomGridlines = d3.axisBottom(ethScale)
+                                      .tickSize(-ethChartHeight-10)
+                                      .tickFormat("")
+              eth_annotations.append("g")
+                .attr("class", "x axis")
+                .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
+                .call(ethbottomAxis);
+              eth_annotations.append("g")
+                .attr("class", "x gridlines")
+                .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
+                .call(ethbottomGridlines);
+
+              let rects = d3.select("#ethpoints").selectAll("rect.all").data(ethdata)
+                                      .join("rect")
+                                      .attr("class", "all")
+                                      .attr("label", d => d[0])
+                                      .attr("amt", d => d[1])
+                                      .attr("x", d => ethScale(d[0])-4)
+                                      .attr("y", d => freqScale(d[1]))
+                                      .attr("height", d => {
+                                        console.log(freqScale(d[1]));
+                                        return chartHeight - freqScale(d[1] - 350)})
+                                      .attr("width", 8)
+                                      .attr("fill", "orange" );
+
+              var eth2 = {"hispanic": 200, "afam": 150, "other": 100}
+              let rects_filter = d3.select("#ethpoints").selectAll("rect.filter").data(Object.entries(eth2))
+                                      .join("rect")
+                                      .attr("class", "filter")
+                                      .attr("label", d => d[0])
+                                      .attr("amt", d => d[1])
+                                      .attr("x", d => ethScale(d[0])-4)
+                                      .attr("y", d => freqScale(d[1]))
+                                      .attr("height", d => {
+                                        console.log(freqScale(d[1]));
+                                        return chartHeight - freqScale(d[1] - 350)})
+                                      .attr("width", 8)
+                                      .attr("fill", "pink" );
             };
             loadScatter();
 
