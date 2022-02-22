@@ -183,7 +183,7 @@
                 .call(leftGridlines);
             edu_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+3})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(edu_bottomAxis);
             edu_annotations.append("g")
                 .attr("class", "x gridlines")
@@ -200,7 +200,7 @@
                 .call(leftGridlines);
             bg_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+3})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(bg_bottomAxis);
             bg_annotations.append("g")
                 .attr("class", "x gridlines")
