@@ -25,6 +25,8 @@
         <!-- buttons -->
         <div id="wrapper" style="display:flex; margin: 2%;">
           <div  style="width: 50%; margin: 3%">
+            <!-- legend for gender color -->
+            <div id="legend"></div> 
             <!-- <button type="button">low</button>
             <button type="button">high</button> -->
 
@@ -154,7 +156,30 @@
 
                 // create custom color scale for gender
                 var colors = ["red", "blue"];
-                const colorScale = d3.scaleOrdinal().domain(["gender"]).range(colors);
+                const colorScale = d3.scaleOrdinal().domain(["female", "male"]).range(colors);
+
+                // create legend
+                let legend = d3.select("div#legend");
+                legend = legend.selectAll("div.row")
+                    .data(colorScale.domain())
+                    .enter()
+                    .append("div")
+                    .style("padding", 10)
+                    .attr("class", "row");
+
+                legend.append("svg").attr("width", 20).attr("height", 20)
+                    .append("rect")
+                    .attr('x', 0)
+                    .attr('y', 2)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .attr("fill", colorScale);
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 20)
+                    .attr("dy", ".35em")
+                    .text(function (d) { return d+"\n"; });
 
                 let leftAxis = d3.axisLeft(distanceScale)
                     .tickFormat(d3.format(""));
@@ -268,10 +293,10 @@
                 }
             });
 
-            console.log(eth)
-            console.log(ped)
-            console.log(home)
-            console.log(inc)
+            // console.log(eth)
+            // console.log(ped)
+            // console.log(home)
+            // console.log(inc)
 
             let side = d3.select("#side")
             side.append("br")
