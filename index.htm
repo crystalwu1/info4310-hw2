@@ -12,29 +12,37 @@
     <body>
         <!-- buttons -->
         <div id="wrapper" style="display:flex; margin: 2%;">
-          <div  style="width: 50%; margin: 3%">
-            <button type="button">low</button>
-            <button type="button">high</button>
+          <div  style="max-width: 65%; margin: 1%">
+              <div id="title" style="width:100%; height:10%; margin-top: 2%; margin-bottom: 7%;">
+                <h1> Title </h1>
+                <h3> Lydia Kim (lmk225), Crystal Wu (cw683) </h3>
+                <p> Description </p>
+              </div>
+              <div id="graph-wrapper" style="width:100%; height: 80%; display: flex; flex-wrap: wrap">
+                  <div>
+                    <h1>Scores vs. Distance</h1>
+                    <svg id="edu_viz" height="350" width="500" style="margin-top:20px"></svg>
+                  </div>
 
-            <h1>Scores vs. Distance</h1>
-        <select id="selectButton"></select>
-
-            <!-- svg -->
-            <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
-
-            <h1>Background vs. Distance</h2>
-
-            <!-- svg -->
-            <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
+                  <div>
+                    <h1>Background vs. Distance</h2>
+                    <svg id="bg_viz" height="350" width="500" style="margin-top:20px"></svg>
+                  </div>
+              </div>
+              <div id="graph-wrapper" style="width:100%; height: 5%; display: flex;">
+                <button type="button">low</button>
+                <button type="button">high</button>
+                <select id="selectButton"></select>
+              </div>
           </div>
-          <div id="side" style="width: 40%; height: 90%; margin: 3%">
-            <h2>Among students with .... test scores from .... counties , ....</h2>
-            <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
-            <p>Parents Attended College</p>
-            <svg id="ped_viz" height="100" width="400" style="margin:20px"></svg>
-            <div id="my_dataviz"></div>
-            <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
-            <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
+          <div id="side" style="width: 25%; height: 90%; margin: 3%">
+              <h2>Among students with .... test scores from .... counties , ....</h2>
+              <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
+              <p>Parents Attended College</p>
+              <svg id="ped_viz" height="100" width="400" style="overflow: visible;"></svg>
+              <div id="my_dataviz"></div>
+              <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
+              <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
           </div>
         </div>
 
@@ -48,8 +56,6 @@
                 const bg_scatter = d3.select("#bg_viz");
                 const eth_scatter = d3.select("#eth_viz");
                 const ped_scatter = d3.select("#ped_viz");
-                const home_scatter = d3.select("#home_viz");
-                const inc_scatter = d3.select("#inc_viz");
 
                 // width of both scatter plots are the same, given that their sizes are the same
                 // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
@@ -73,14 +79,7 @@
 
                 let ped_annotations = ped_scatter.append("g").attr("id","annotations");
                 let ped_chartArea = ped_scatter.append("g").attr("id","points")
-
-                let home_annotations = home_scatter.append("g").attr("id","annotations");
-                let home_chartArea = home_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
-
-                let inc_annotations = inc_scatter.append("g").attr("id","annotations");
-                let inc_chartArea = inc_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
+                    .attr("transform","translate("+5+","+margin.top+")");
 
                 // load dataset
                 const college_csv = await d3.csv("CollegeDistance.csv");
@@ -289,7 +288,6 @@
                 .attr("width", d => ped_length(d, ped))
                 .attr("height", 50)
                 .attr("fill", "coral")
-                .attr("stroke", 'black')
                 .attr("id", d => d);
 
             var ped2 = {"mom": 30, "dad": 30, "both": 20, "neither": 800}
@@ -302,6 +300,50 @@
                 .attr("height", 50)
                 .attr("fill", "pink")
                 .attr("id", d => d);
+
+            const hover = ped_scatter.append("g")
+                               .attr("visibility","hidden")
+            const txt = hover.append("rect")
+                       .attr("fill", "black")
+                       // .attr("text-anchor","start")
+                       // .attr("alignment-baseline","hanging")
+                       .attr("x", 0)
+                       .attr("y", 0)
+                       .attr("width", 100)
+                       .attr("height", 100)
+                       .style("font-weight", "bold");
+
+
+            let ped_outlines = ped_chartArea.selectAll("rect.outline").data(["none", "one", "both"])
+                .enter()
+                .append('rect')
+                .attr("class", "outline")
+                .attr("x", d => ped_start(d))
+                .attr("y", 0)
+                .attr("width", d => ped_length(d, ped))
+                .attr("height", 50)
+                .attr("fill-opacity", "0")
+                .attr("stroke", 'black')
+                .attr("id", d => d)
+                .on("mouseover", function(d) {
+                  d3.select(this)
+                    .transition().duration(100)
+                    .attr("stroke-width", 3)
+                    hover.style("visibility", "visible")
+                    txt.attr("x", d3.select(this).attr("x") + d3.select(this).attr("width")/2)
+                    txt.attr("y", d3.select(this).attr("height"))
+
+                    console.log()
+
+                })
+                .on("mouseout", function(d) {
+                  d3.select(this)
+                    .transition().duration(100)
+                    .attr("stroke-width", 1)
+                    hover.style("visibility", "hidden")
+                })
+
+
 
             //ETHNICITY BAR CHART
             ethdata = Object.entries(eth)
