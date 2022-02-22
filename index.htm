@@ -5,7 +5,19 @@
     </head>
 
     <!-- css styles -->
+    <!-- styles taken from https://github.com/jeffrz/info4310-sp2022/blob/main/notes/22.02.07.notes.htm -->
     <style>
+        .gridlines line {
+            stroke: #bbb;
+        }
+
+        .gridlines .domain {
+            stroke: none;
+        }
+            
+        #scatterplot {
+            float:left;
+        }
 
     </style>
 
@@ -154,7 +166,6 @@
                 let edu_bottomGridlines = d3.axisBottom(scoreScale)
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
-
                 let bg_bottomAxis = d3.axisBottom(wageScale)
                     .tickFormat(d3.format("~f"));  // exact value without commas
                 let bg_bottomGridlines = d3.axisBottom(wageScale)
@@ -172,7 +183,7 @@
                 .call(leftGridlines);
             edu_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+3})`)
                 .call(edu_bottomAxis);
             edu_annotations.append("g")
                 .attr("class", "x gridlines")
@@ -189,7 +200,7 @@
                 .call(leftGridlines);
             bg_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top+3})`)
                 .call(bg_bottomAxis);
             bg_annotations.append("g")
                 .attr("class", "x gridlines")
@@ -232,29 +243,6 @@
                 .attr("y", -chartHeight/2 + margin.bottom + 65)
                 .attr("transform", "rotate(-90)")
                 .text("Distance (in 10 miles)");
-
-        
-
-            // add circles
-            let edu_circles = edu_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => scoreScale(d['score']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
-
-            let bg_circles = bg_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => wageScale(d['wage']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
 
             //Side Bar Graphs
             var eth = {"hispanic": 0, "afam": 0, "other": 0}
@@ -406,41 +394,6 @@
                                       .attr("width", 8)
                                       .attr("fill", "pink" );
 
-                // create axes and gridlines
-                edu_annotations.append("g")
-                    .attr("class", "y axis")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftAxis);
-                edu_annotations.append("g")
-                    .attr("class", "y gridlines")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftGridlines);
-                edu_annotations.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(edu_bottomAxis);
-                edu_annotations.append("g")
-                    .attr("class", "x gridlines")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(edu_bottomGridlines);
-
-                bg_annotations.append("g")
-                    .attr("class", "y axis")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftAxis);
-                bg_annotations.append("g")
-                    .attr("class", "y gridlines")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftGridlines);
-                bg_annotations.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(bg_bottomAxis);
-                bg_annotations.append("g")
-                    .attr("class", "x gridlines")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(bg_bottomGridlines);
-
                 // function to create circles
                 function createCircles(chartArea, data, xScale, xCol) {
                     let circles = chartArea.selectAll("circle.point").data(data)
@@ -454,6 +407,7 @@
                     .attr("fill", d => colorScale(d['gender']));
                 }
 
+                // add circles to main scatter plot
                 createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
                 createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
 
