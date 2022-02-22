@@ -13,8 +13,8 @@
         <!-- buttons -->
         <div id="wrapper" style="display:flex; margin: 2%;">
           <div  style="width: 50%; margin: 3%">
-            <button type="button">low</button>
-            <button type="button">high</button>
+            <!-- <button type="button">low</button>
+            <button type="button">high</button> -->
 
             <h1>Scores vs. Distance</h1>
         <select id="selectButton"></select>
@@ -55,7 +55,7 @@
                 // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
                 const width = edu_scatter.attr("width");
                 const height = edu_scatter.attr("height");
-                const margin =  {top: 15, right: 15, bottom: 40, left: 50};
+                const margin =  {top: 40, right: 40, bottom: 40, left: 40};
                 const chartWidth = width - margin.left - margin.right;
                 const chartHeight = height - margin.top - margin.right;
 
@@ -195,6 +195,45 @@
                 .attr("class", "x gridlines")
                 .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
                 .call(bg_bottomGridlines);
+
+            // add axis labels
+            edu_chartArea.append("text")
+                .attr("class", "x label")
+                .attr("text-anchor", "middle")
+                .style("font-size", 13)
+                .attr("x", chartWidth/2)
+                .attr("y", chartHeight + margin.top - 10)
+                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
+                .text("Test Scores");
+
+            edu_chartArea.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .style("font-size", 13)
+                .attr("x", margin.left - 100)
+                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("transform", "rotate(-90)")
+                .text("Distance (in 10 miles)");
+
+            bg_chartArea.append("text")
+                .attr("class", "x label")
+                .attr("text-anchor", "middle")
+                .style("font-size", 13)
+                .attr("x", chartWidth/2)
+                .attr("y", chartHeight + margin.top - 10)
+                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
+                .text("State Hourly Wage");
+
+            bg_chartArea.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .style("font-size", 13)
+                .attr("x", margin.left - 100)
+                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("transform", "rotate(-90)")
+                .text("Distance (in 10 miles)");
+
+        
 
             // add circles
             let edu_circles = edu_chartArea.selectAll("circle.point").data(college_filtered)
@@ -427,15 +466,6 @@
                     // give new data to circles
                     createCircles(edu_chartArea, filtered, scoreScale, 'score')
                     createCircles(bg_chartArea, filtered, wageScale, 'wage')
-                    // edu_circles
-                    //     .datum(filtered)
-                        // .transition()
-                        // .duration(1000)
-                    //     .attr("d", d3.circle()
-                    //         .x(function(d) { return scoreScale(d.score) })
-                    //         .y(function(d) { return distanceScale(d.distance) })
-                    //     )
-                    //     // .attr("stroke", function(d){ return myColor(selectedGroup) })
                 }
 
                 // when an option is selected, call update
