@@ -24,69 +24,57 @@
     <body>
         <!-- buttons -->
         <div id="wrapper" style="display:flex; margin: 2%;">
-          <div  style="max-width: 65%; margin: 1%">
+          <div  style="width: 70%; margin: 1%">
               <div id="title" style="width:100%; height:10%; margin-top: 2%; margin-bottom: 7%;">
                 <h1> Title </h1>
                 <h3> Lydia Kim (lmk225), Crystal Wu (cw683) </h3>
                 <p> Description </p>
               </div>
+
               <div id="graph-wrapper" style="width:100%; height: 80%; display: flex; flex-wrap: wrap">
-                  <div>
+                  <div style="height: auto">
                     <h1>Scores vs. Distance</h1>
+                    <!-- include low, med, and high -->
                     <svg id="edu_viz" height="350" width="500" style="margin-top:20px"></svg>
+                    <div>
+                      <b>Scores:</b>
+                      <select id="scores_selectButton">
+                          <option value="all">all</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
                     <h1>Background vs. Distance</h2>
                     <svg id="bg_viz" height="350" width="500" style="margin-top:20px"></svg>
+                    <div>
+                      <b>Wages:</b>
+                      <select id="wages_selectButton">
+                          <option value="all">all</option>
+                      </select>
+                      <b>Income:</b>
+                      <select id="income_selectButton">
+                          <option value="all">all</option>
+                      </select>
+                    </div>
                   </div>
               </div>
               <div id="graph-wrapper" style="width:100%; height: 5%; display: flex;">
-                <button type="button">low</button>
-                <button type="button">high</button>
-                <select id="selectButton"></select>
+                <!-- legend for gender color -->
+                <div id="legend"></div>
               </div>
-          <div  style="width: 50%; margin: 3%">
-            <!-- legend for gender color -->
-            <div id="legend"></div>
-            <!-- <button type="button">low</button>
-            <button type="button">high</button> -->
-
-            <!-- create dropdown filters, include default option -->
-            <h1>Scores vs. Distance</h1>
-            <b>Income:</b>
-            <select id="income_selectButton">
-                <option value="all">all</option>
-            </select>
-
-            <!-- include low, med, and high -->
-            <b>Scores:</b>
-            <select id="scores_selectButton">
-                <option value="all">all</option>
-            </select>
-
-            <b>Wages:</b>
-            <select id="wages_selectButton">
-                <option value="all">all</option>
-            </select>
-
-            <!-- svg -->
-            <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
-
-            <h1>Background vs. Distance</h2>
-
-            <!-- svg -->
-            <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
-          </div>
-          <div id="side" style="width: 25%; height: 90%; margin: 3%">
-              <h2>Among students with .... test scores from .... counties , ....</h2>
-              <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
-              <p>Parents Attended College</p>
-              <svg id="ped_viz" height="100" width="400" style="overflow: visible;"></svg>
-              <div id="my_dataviz"></div>
-              <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
-              <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
-          </div>
+        </div>
+        <div id="side" style="width: 20%; height: 90%; margin: 3%">
+            <h2 id="sideBarTitle">Among students with .... test scores from .... counties , ....</h2>
+            <p id="home_header"></p>
+            <p id="eth_header"></p>
+            <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
+            <p id="ped_header"></p>
+            <div id="ped_mouseover" />
+            <svg id="ped_viz" height="100" width="400" style="overflow: visible;"></svg>
+            <div id="my_dataviz"></div>
+            <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
+            <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
         </div>
 
 
@@ -122,6 +110,10 @@
 
                 let ped_annotations = ped_scatter.append("g").attr("id","annotations");
                 let ped_chartArea = ped_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+5+","+margin.top+")");
+                let ped_filterArea = ped_scatter.append("g").attr("id","points")
+                    .attr("transform","translate("+5+","+margin.top+")");
+                let ped_outlineArea = ped_scatter.append("g").attr("id","points")
                     .attr("transform","translate("+5+","+margin.top+")");
 
                 // load dataset
@@ -174,17 +166,6 @@
                     .attr("value", f) // corresponding value returned by the button
                 }
 
-                createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
-
-                // var income_options = d3.select("#income_selectButton")
-                //     .selectAll('myOptions')
-     	        //     .data(incomeKeys)
-                //     .enter()
-    	        //     .append('option')
-                //     .text(function (d) { return d; }) // text showed in the menu
-                //     .attr("value", function (d) { return d; }) // corresponding value returned by the button
-
-
                 // create extent
                 const scoreExtent = d3.extent(college_filtered, d => d['score']);
                 const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
@@ -207,9 +188,10 @@
                     "high": wageExtent[1]
                 };
 
-                createDropDown("#scores_selectButton", quantile_names, function (d) { return score_dict[d]; });
-                createDropDown("#wages_selectButton", quantile_names, function (d) { return wage_dict[d]; });
-
+                createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
+                createDropDown("#scores_selectButton", quantile_names, function (d) { return d; });
+                createDropDown("#wages_selectButton", quantile_names, function (d) { return d; });
+                var dropdownDict = {"#income_selectButton": "all", "#scores_selectButton": "all", "#wages_selectButton": "all"}
 
                 // create custom color scale for gender
                 var colors = ["red", "blue"];
@@ -350,17 +332,10 @@
                 }
             });
 
-            // console.log(eth)
-            // console.log(ped)
-            // console.log(home)
-            // console.log(inc)
-
-            let side = d3.select("#side")
-            side.append("br")
-            side.append("text").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}%'s families own homes`)
-            side.append("br")
+            d3.select("#home_header").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of their families own homes`)
+            // side.append("br")
             // side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% have parents that attended college`)
-            side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% are from low income families`)
+            // side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% are from low income families`)
 
             //PARENT EDUCATION HORIZONTAL BAR CHART
             let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
@@ -400,31 +375,7 @@
                 .attr("fill", "coral")
                 .attr("id", d => d);
 
-            var ped2 = {"mom": 30, "dad": 30, "both": 20, "neither": 800}
-            let ped_filter = ped_chartArea.selectAll("rect.filteer").data(["none", "one", "both"])
-                .join("rect")
-                .attr("class", "filter")
-                .attr("x", d => ped_start(d))
-                .attr("y", 0)
-                .attr("width", d => ped_length(d, ped2))
-                .attr("height", 50)
-                .attr("fill", "pink")
-                .attr("id", d => d);
-
-            const hover = ped_scatter.append("g")
-                               .attr("visibility","hidden")
-            const txt = hover.append("rect")
-                       .attr("fill", "black")
-                       // .attr("text-anchor","start")
-                       // .attr("alignment-baseline","hanging")
-                       .attr("x", 0)
-                       .attr("y", 0)
-                       .attr("width", 100)
-                       .attr("height", 100)
-                       .style("font-weight", "bold");
-
-
-            let ped_outlines = ped_chartArea.selectAll("rect.outline").data(["none", "one", "both"])
+            let ped_outlines = ped_outlineArea.selectAll("rect.outline").data(["none", "one", "both"])
                 .enter()
                 .append('rect')
                 .attr("class", "outline")
@@ -439,20 +390,21 @@
                   d3.select(this)
                     .transition().duration(100)
                     .attr("stroke-width", 3)
-                    hover.style("visibility", "visible")
-                    txt.attr("x", d3.select(this).attr("x") + d3.select(this).attr("width")/2)
-                    txt.attr("y", d3.select(this).attr("height"))
-
-                    console.log()
+                    ped_fil_text.attr("visibility", "visible")
 
                 })
                 .on("mouseout", function(d) {
                   d3.select(this)
                     .transition().duration(100)
                     .attr("stroke-width", 1)
-                    hover.style("visibility", "hidden")
+                    ped_fil_text.attr("visibility", "hidden")
                 })
 
+            const hover = d3.select("#ped_mouseover")
+            d3.select("#ped_header").text(`${10} of students had one or more parents that attended college.`)
+            const ped_fil_text = hover.append("text")
+                      .text("test")
+                      .attr("visibility", "hidden")
 
 
             //ETHNICITY BAR CHART
@@ -460,7 +412,7 @@
 
             let ethChartWidth = Number(eth_scatter.attr("width"))- margin.left - margin.right;
             let ethChartHeight = Number(eth_scatter.attr("height"))- margin.top - margin.bottom;
-            const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([0, ethChartWidth/2, ethChartWidth]);
+            const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([margin.left, ethChartWidth/2, ethChartWidth-margin.left]);
 
             const freqExtent = d3.extent(Object.values(eth));
             const freqScale = d3.scaleLinear().domain([0, freqExtent[1]]).range([ethChartHeight, 0]);
@@ -501,54 +453,145 @@
                                       .attr("y", d => freqScale(d[1]))
                                       .attr("height", d => {
                                         console.log(freqScale(d[1]));
-                                        return chartHeight - freqScale(d[1] - 350)})
+                                        return chartHeight - freqScale(d[1] - 250)})
                                       .attr("width", 8)
                                       .attr("fill", "orange" );
 
-              var eth2 = {"hispanic": 200, "afam": 150, "other": 100}
-              let rects_filter = d3.select("#ethpoints").selectAll("rect.filter").data(Object.entries(eth2))
-                                      .join("rect")
-                                      .attr("class", "filter")
-                                      .attr("label", d => d[0])
-                                      .attr("amt", d => d[1])
-                                      .attr("x", d => ethScale(d[0])-4)
-                                      .attr("y", d => freqScale(d[1]))
-                                      .attr("height", d => {
-                                        console.log(freqScale(d[1]));
-                                        return chartHeight - freqScale(d[1] - 350)})
-                                      .attr("width", 8)
-                                      .attr("fill", "pink" );
+              d3.select("#eth_header").text(`${10} of students were from underrepresented minorities.`)
 
-                // function to create circles
-                function createCircles(chartArea, data, xScale, xCol) {
-                    let circles = chartArea.selectAll("circle.point").data(data)
-                    .join(enter => enter.append("circle")
-                        .attr("class","point")
-                        .attr("opacity", 0.8)
-                        )
-                    .attr("cx", d => xScale(d[xCol]))
-                    .attr("cy", d => distanceScale(d['distance']))
-                    .attr("r", 2)
-                    .attr("fill", d => colorScale(d['gender']));
+              // function to create circles
+              function createCircles(chartArea, data, xScale, xCol) {
+                  let circles = chartArea.selectAll("circle.point").data(data)
+                  .join(enter => enter.append("circle")
+                      .attr("class","point")
+                      .attr("opacity", 0.8)
+                      )
+                  .attr("cx", d => xScale(d[xCol]))
+                  .attr("cy", d => distanceScale(d['distance']))
+                  .attr("r", 2)
+                  .attr("fill", d => colorScale(d['gender']));
+              }
+
+              // add circles to main scatter plot
+              createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
+              createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
+
+
+              function incomeCheck(condition, data) {
+                if (condition == "all") {
+                  return true
+                } else {
+                  return data.income == condition
                 }
+              }
 
-                // add circles to main scatter plot
-                createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
-                createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
+              function wagesCheck(condition, data) {
+                console.log(data.wage, condition, wage_dict["low"])
+                if (condition == "all") {
+                  return true
+                } else if (condition == "low"){
+                  return data.wage < wage_dict["low"]
+                } else if (condition == "medium") {
+                  return data.wage >= wage_dict["low"] && data.wage < wage_dict["high"]
+                } else {
+                  return data.wage >= wage_dict["high"]
+                }
+              }
 
-                // code inspired from https://www.d3-graph-gallery.com/graph/line_filter.html
-                // update scatter based on selection
-                function update(selectedGroup) {
-                    // filter dataset based on button selection
-                    if (selectedGroup === 'all') {
-                        var filtered = college_filtered;
-                    }
-                    else {
-                        var filtered = college_filtered.filter(function(d){return d.income == selectedGroup})
-                    }
-                    // give new data to circles
-                    createCircles(edu_chartArea, filtered, scoreScale, 'score')
-                    createCircles(bg_chartArea, filtered, wageScale, 'wage')
+              function scoresCheck(condition, data) {
+                if (condition == "all") {
+                  return true
+                } else if (condition == "low"){
+                  return data.score < score_dict["low"]
+                } else if (condition == "medium") {
+                  return data.score >= score_dict["low"] && data.score < score_dict["high"]
+                } else {
+                  return data.score >= score_dict["high"]
+                }
+              }
+              // code inspired from https://www.d3-graph-gallery.com/graph/line_filter.html
+              // update scatter based on selection
+              function update(dropdownDict) {
+                  // filter dataset based on button selection
+                  let scores = dropdownDict["#scores_selectButton"];
+                  let income = dropdownDict["#income_selectButton"];
+                  let wages = dropdownDict["#wages_selectButton"];
+
+                  if (scores == "all" && wages == "all" && income == "all") {
+                      var filtered = college_filtered;
+                  }
+                  else {
+                    console.log("filtering", scores, wages, income, dropdownDict)
+                      var filtered = college_filtered.filter(function(d){return incomeCheck(income, d) && wagesCheck(wages, d) && scoresCheck(scores, d)})
+
+                      var eth2 = {"hispanic": 0, "afam": 0, "other": 0}
+                      var inc2 = {"low": 0, "high": 0}
+                      var home2 = {"yes": 0, "no": 0}
+                      var ped2 = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
+
+                      filtered.forEach((d, i) => {
+                          eth2[d["ethnicity"]] += 1;
+                          inc2[d["income"]] += 1;
+                          home2[d["home"]] += 1;
+                          if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
+                            ped2["both"] += 1
+                            ped2["mom"] += 1
+                            ped2["dad"] += 1
+                          } else if (d["fcollege"] == "yes") {
+                            ped2["dad"] += 1
+                          } else if (d["mcollege"] == "yes") {
+                            ped2["mom"] += 1
+                          }
+                          else {
+                            ped2["neither"] += 1
+                          }
+                      });
+
+
+                      let ped_filter = ped_filterArea.selectAll("rect.filter").data(["none", "one", "both"])
+                          .join("rect")
+                          .attr("class", "filter")
+                          .attr("x", d => ped_start(d))
+                          .attr("y", 0)
+                          .attr("width", d => ped_length(d, ped2))
+                          .attr("height", 50)
+                          .attr("fill", "pink")
+                          .attr("id", d => d);
+
+                      let rects_filter = d3.select("#ethpoints").selectAll("rect.filter").data(Object.entries(eth2))
+                                              .join("rect")
+                                              .attr("class", "filter")
+                                              .attr("label", d => d[0])
+                                              .attr("amt", d => d[1])
+                                              .attr("x", d => ethScale(d[0])-4)
+                                              .attr("y", d => freqScale(d[1]))
+                                              .attr("height", d => {
+                                                console.log(freqScale(d[1]));
+                                                return chartHeight - freqScale(d[1] - 250)})
+                                              .attr("width", 8)
+                                              .attr("fill", "pink" );
+                  }
+                  // give new data to circles
+                  createCircles(edu_chartArea, filtered, scoreScale, 'score')
+                  createCircles(bg_chartArea, filtered, wageScale, 'wage')
+                  updateSideHeader()
+              }
+
+                function updateSideHeader() {
+                  var incomeSelector = d3.select("#income_selectButton").property("value")
+                  var scoreSelector = d3.select("#scores_selectButton").property("value")
+                  var wageSelector = d3.select("#wages_selectButton").property("value")
+
+                  let sideBarTitle = d3.select("#sideBarTitle")
+
+                  if (incomeSelector == "all" && scoreSelector == "all" && wageSelector == "all") {
+                    sideBarTitle.text("Among all students surveyed...")
+                  } else {
+                    incomeSelector = (incomeSelector == "all") ? "" : `from ${incomeSelector}-income families`
+                    scoreSelector = (scoreSelector == "all") ? "" : `with ${scoreSelector} test scores`
+                    wageSelector = (wageSelector == "all") ? "" : `in ${wageSelector}-income counties`
+                    sideBarTitle.text(`Among students ${incomeSelector} ${scoreSelector} ${wageSelector} ...`)
+                  }
                 }
 
                 // when an option is selected, call update
@@ -556,7 +599,22 @@
                     // recover the option that has been chosen
                     var selectedOption = d3.select(this).property("value")
                     // run the updateChart function with this selected option
-                    update(selectedOption)
+                    dropdownDict["#income_selectButton"] = selectedOption
+                    update(dropdownDict)
+                })
+                d3.select("#scores_selectButton").on("change", function(d) {
+                    // recover the option that has been chosen
+                    var selectedOption = d3.select(this).property("value")
+                    // run the updateChart function with this selected option
+                    dropdownDict["#scores_selectButton"] = selectedOption
+                    update(dropdownDict)
+                })
+                d3.select("#wages_selectButton").on("change", function(d) {
+                    // recover the option that has been chosen
+                    var selectedOption = d3.select(this).property("value")
+                    // run the updateChart function with this selected option
+                    dropdownDict["#wages_selectButton"] = selectedOption
+                    update(dropdownDict)
                 })
             };
             loadScatter();
