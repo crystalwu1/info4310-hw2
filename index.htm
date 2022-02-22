@@ -30,9 +30,21 @@
             <!-- <button type="button">low</button>
             <button type="button">high</button> -->
 
+            <!-- create dropdown filters, include default option -->
             <h1>Scores vs. Distance</h1>
             <b>Income:</b>
-            <select id="selectButton">
+            <select id="income_selectButton">
+                <option value="all">all</option>
+            </select>
+
+            <!-- include low, med, and high -->
+            <b>Scores:</b>
+            <select id="scores_selectButton">
+                <option value="all">all</option>
+            </select>
+
+            <b>Wages:</b>
+            <select id="wages_selectButton">
                 <option value="all">all</option>
             </select>
 
@@ -128,7 +140,7 @@
                 backgr_lm = d3.quantile(backgr, 0.33)
                 backgr_mh = d3.quantile(backgr, 0.66)
 
-                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh)
+                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh);
 
                 // remove rows where education is not twelve (exclude non-seniors)
                 college_filtered = college_csv.filter((d) => d["education"] === 12 );
@@ -138,27 +150,26 @@
                 // code found from https://github.com/d3/d3-array/blob/main/README.md#group
                 let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
 
-                // add options to the select button
-                // var dropdown = d3.select("#selectButton")
-                //     .append("select")
-                //     .attr("name", "income values");
-                
-                // var default_option = dropdown
-                //     .selectAll("myOptions")   
-                //     .append("option")
-                //     .enter()
-                //     .data(incomeKeys)
-                //     .text("All")
-                //     .attr("value", "All");
-
-
-                var options = d3.select("#selectButton")
+                // add options to the income dropdown
+                function createDropDown(selector, data, f) {
+                    var options = d3.select(selector)
                     .selectAll('myOptions')
-     	            .data(incomeKeys)
+     	            .data(data)
                     .enter()
     	            .append('option')
                     .text(function (d) { return d; }) // text showed in the menu
-                    .attr("value", function (d) { return d; }) // corresponding value returned by the button
+                    .attr("value", f) // corresponding value returned by the button
+                }
+
+                createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
+
+                // var income_options = d3.select("#income_selectButton")
+                //     .selectAll('myOptions')
+     	        //     .data(incomeKeys)
+                //     .enter()
+    	        //     .append('option')
+                //     .text(function (d) { return d; }) // text showed in the menu
+                //     .attr("value", function (d) { return d; }) // corresponding value returned by the button
 
 
                 // create extent
@@ -169,6 +180,22 @@
                 const distanceExtent = d3.extent(college_filtered, d => d['distance']);
                 // tried doing a log scale but didn't return valid numbers
                 const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
+
+                // add options to scores, wages dropdown
+                const quantile_names = ["low", "medium", "high"]
+                var score_dict = {
+                    "low": scores_lm,
+                    "medium": scores_mh,
+                    "high": scoreExtent[1]
+                };
+                var wage_dict = {
+                    "low": backgr_lm,
+                    "medium": backgr_mh,
+                    "high": wageExtent[1]
+                };
+
+                createDropDown("#scores_selectButton", quantile_names, function (d) { return score_dict[d]; });
+                createDropDown("#wages_selectButton", quantile_names, function (d) { return wage_dict[d]; });
 
 
                 // create custom color scale for gender
@@ -469,7 +496,7 @@
                 }
 
                 // when an option is selected, call update
-                d3.select("#selectButton").on("change", function(d) {
+                d3.select("#income_selectButton").on("change", function(d) {
                     // recover the option that has been chosen
                     var selectedOption = d3.select(this).property("value")
                     // run the updateChart function with this selected option
