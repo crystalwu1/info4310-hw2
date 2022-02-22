@@ -5,7 +5,19 @@
     </head>
 
     <!-- css styles -->
+    <!-- styles taken from https://github.com/jeffrz/info4310-sp2022/blob/main/notes/22.02.07.notes.htm -->
     <style>
+        .gridlines line {
+            stroke: #bbb;
+        }
+
+        .gridlines .domain {
+            stroke: none;
+        }
+
+        #scatterplot {
+            float:left;
+        }
 
     </style>
 
@@ -34,6 +46,37 @@
                 <button type="button">high</button>
                 <select id="selectButton"></select>
               </div>
+          <div  style="width: 50%; margin: 3%">
+            <!-- legend for gender color -->
+            <div id="legend"></div>
+            <!-- <button type="button">low</button>
+            <button type="button">high</button> -->
+
+            <!-- create dropdown filters, include default option -->
+            <h1>Scores vs. Distance</h1>
+            <b>Income:</b>
+            <select id="income_selectButton">
+                <option value="all">all</option>
+            </select>
+
+            <!-- include low, med, and high -->
+            <b>Scores:</b>
+            <select id="scores_selectButton">
+                <option value="all">all</option>
+            </select>
+
+            <b>Wages:</b>
+            <select id="wages_selectButton">
+                <option value="all">all</option>
+            </select>
+
+            <!-- svg -->
+            <svg id="edu_viz" height="350" width="500" style="margin:20px"></svg>
+
+            <h1>Background vs. Distance</h2>
+
+            <!-- svg -->
+            <svg id="bg_viz" height="350" width="500" style="margin:20px"></svg>
           </div>
           <div id="side" style="width: 25%; height: 90%; margin: 3%">
               <h2>Among students with .... test scores from .... counties , ....</h2>
@@ -61,7 +104,7 @@
                 // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
                 const width = edu_scatter.attr("width");
                 const height = edu_scatter.attr("height");
-                const margin =  {top: 15, right: 15, bottom: 40, left: 50};
+                const margin =  {top: 40, right: 40, bottom: 40, left: 40};
                 const chartWidth = width - margin.left - margin.right;
                 const chartHeight = height - margin.top - margin.right;
 
@@ -110,7 +153,7 @@
                 backgr_lm = d3.quantile(backgr, 0.33)
                 backgr_mh = d3.quantile(backgr, 0.66)
 
-                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh)
+                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh);
 
                 // remove rows where education is not twelve (exclude non-seniors)
                 college_filtered = college_csv.filter((d) => d["education"] === 12 );
@@ -120,14 +163,27 @@
                 // code found from https://github.com/d3/d3-array/blob/main/README.md#group
                 let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
 
-                // add options to the select button
-                d3.select("#selectButton")
+                // add options to the income dropdown
+                function createDropDown(selector, data, f) {
+                    var options = d3.select(selector)
                     .selectAll('myOptions')
-     	            .data(incomeKeys)
+     	            .data(data)
                     .enter()
     	            .append('option')
                     .text(function (d) { return d; }) // text showed in the menu
-                    .attr("value", function (d) { return d; }) // corresponding value returned by the button
+                    .attr("value", f) // corresponding value returned by the button
+                }
+
+                createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
+
+                // var income_options = d3.select("#income_selectButton")
+                //     .selectAll('myOptions')
+     	        //     .data(incomeKeys)
+                //     .enter()
+    	        //     .append('option')
+                //     .text(function (d) { return d; }) // text showed in the menu
+                //     .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
 
                 // create extent
                 const scoreExtent = d3.extent(college_filtered, d => d['score']);
@@ -138,10 +194,49 @@
                 // tried doing a log scale but didn't return valid numbers
                 const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
+                // add options to scores, wages dropdown
+                const quantile_names = ["low", "medium", "high"]
+                var score_dict = {
+                    "low": scores_lm,
+                    "medium": scores_mh,
+                    "high": scoreExtent[1]
+                };
+                var wage_dict = {
+                    "low": backgr_lm,
+                    "medium": backgr_mh,
+                    "high": wageExtent[1]
+                };
+
+                createDropDown("#scores_selectButton", quantile_names, function (d) { return score_dict[d]; });
+                createDropDown("#wages_selectButton", quantile_names, function (d) { return wage_dict[d]; });
+
 
                 // create custom color scale for gender
                 var colors = ["red", "blue"];
-                const colorScale = d3.scaleOrdinal().domain(["gender"]).range(colors);
+                const colorScale = d3.scaleOrdinal().domain(["female", "male"]).range(colors);
+
+                // create legend
+                let legend = d3.select("div#legend");
+                legend = legend.selectAll("div.row")
+                    .data(colorScale.domain())
+                    .enter()
+                    .append("div")
+                    .style("padding", 10)
+                    .attr("class", "row");
+
+                legend.append("svg").attr("width", 20).attr("height", 20)
+                    .append("rect")
+                    .attr('x', 0)
+                    .attr('y', 2)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .attr("fill", colorScale);
+
+                legend.append("text")
+                    .attr("x", 20)
+                    .attr("y", 20)
+                    .attr("dy", ".35em")
+                    .text(function (d) { return d+"\n"; });
 
                 let leftAxis = d3.axisLeft(distanceScale)
                     .tickFormat(d3.format(""));
@@ -153,7 +248,6 @@
                 let edu_bottomGridlines = d3.axisBottom(scoreScale)
                     .tickSize(-chartHeight-10)
                     .tickFormat("");
-
                 let bg_bottomAxis = d3.axisBottom(wageScale)
                     .tickFormat(d3.format("~f"));  // exact value without commas
                 let bg_bottomGridlines = d3.axisBottom(wageScale)
@@ -171,11 +265,11 @@
                 .call(leftGridlines);
             edu_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(edu_bottomAxis);
             edu_annotations.append("g")
                 .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(edu_bottomGridlines);
 
             bg_annotations.append("g")
@@ -188,33 +282,49 @@
                 .call(leftGridlines);
             bg_annotations.append("g")
                 .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(bg_bottomAxis);
             bg_annotations.append("g")
                 .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(bg_bottomGridlines);
 
-            // add circles
-            let edu_circles = edu_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => scoreScale(d['score']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
+            // add axis labels
+            edu_chartArea.append("text")
+                .attr("class", "x label")
+                .attr("text-anchor", "middle")
+                .style("font-size", 13)
+                .attr("x", chartWidth/2)
+                .attr("y", chartHeight + margin.top - 10)
+                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
+                .text("Test Scores");
 
-            let bg_circles = bg_chartArea.selectAll("circle.point").data(college_filtered)
-                .join(enter => enter.append("circle")
-                    .attr("class","point")
-                    .attr("opacity", 0.8)
-                    )
-                .attr("cx", d => wageScale(d['wage']))
-                .attr("cy", d => distanceScale(d['distance']))
-                .attr("r", 2)
-                .attr("fill", d => colorScale(d['gender']));
+            edu_chartArea.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .style("font-size", 13)
+                .attr("x", margin.left - 100)
+                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("transform", "rotate(-90)")
+                .text("Distance (in 10 miles)");
+
+            bg_chartArea.append("text")
+                .attr("class", "x label")
+                .attr("text-anchor", "middle")
+                .style("font-size", 13)
+                .attr("x", chartWidth/2)
+                .attr("y", chartHeight + margin.top - 10)
+                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
+                .text("State Hourly Wage");
+
+            bg_chartArea.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .style("font-size", 13)
+                .attr("x", margin.left - 100)
+                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("transform", "rotate(-90)")
+                .text("Distance (in 10 miles)");
 
             //Side Bar Graphs
             var eth = {"hispanic": 0, "afam": 0, "other": 0}
@@ -240,10 +350,10 @@
                 }
             });
 
-            console.log(eth)
-            console.log(ped)
-            console.log(home)
-            console.log(inc)
+            // console.log(eth)
+            // console.log(ped)
+            // console.log(home)
+            // console.log(inc)
 
             let side = d3.select("#side")
             side.append("br")
@@ -361,7 +471,7 @@
                                   .tickFormat("")
             eth_annotations.append("g")
               .attr("class", "y axis")
-              .attr("transform",`translate(${margin.left-10},${margin.top})`)
+              .attr("transform",`translate(${margin.left},${margin.top})`)
               .call(ethleftAxis)
             eth_annotations.append("g")
               .attr("class", "y gridlines")
@@ -409,41 +519,6 @@
                                       .attr("width", 8)
                                       .attr("fill", "pink" );
 
-                // create axes and gridlines
-                edu_annotations.append("g")
-                    .attr("class", "y axis")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftAxis);
-                edu_annotations.append("g")
-                    .attr("class", "y gridlines")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftGridlines);
-                edu_annotations.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(edu_bottomAxis);
-                edu_annotations.append("g")
-                    .attr("class", "x gridlines")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(edu_bottomGridlines);
-
-                bg_annotations.append("g")
-                    .attr("class", "y axis")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftAxis);
-                bg_annotations.append("g")
-                    .attr("class", "y gridlines")
-                    .attr("transform",`translate(${margin.left-10},${margin.top})`)
-                    .call(leftGridlines);
-                bg_annotations.append("g")
-                    .attr("class", "x axis")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(bg_bottomAxis);
-                bg_annotations.append("g")
-                    .attr("class", "x gridlines")
-                    .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
-                    .call(bg_bottomGridlines);
-
                 // function to create circles
                 function createCircles(chartArea, data, xScale, xCol) {
                     let circles = chartArea.selectAll("circle.point").data(data)
@@ -457,6 +532,7 @@
                     .attr("fill", d => colorScale(d['gender']));
                 }
 
+                // add circles to main scatter plot
                 createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
                 createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
 
@@ -464,24 +540,19 @@
                 // update scatter based on selection
                 function update(selectedGroup) {
                     // filter dataset based on button selection
-                    var filtered = college_filtered.filter(function(d){return d.income == selectedGroup})
-
+                    if (selectedGroup === 'all') {
+                        var filtered = college_filtered;
+                    }
+                    else {
+                        var filtered = college_filtered.filter(function(d){return d.income == selectedGroup})
+                    }
                     // give new data to circles
                     createCircles(edu_chartArea, filtered, scoreScale, 'score')
                     createCircles(bg_chartArea, filtered, wageScale, 'wage')
-                    // edu_circles
-                    //     .datum(filtered)
-                    //     .transition()
-                    //     .duration(1000)
-                    //     .attr("d", d3.circle()
-                    //         .x(function(d) { return scoreScale(d.score) })
-                    //         .y(function(d) { return distanceScale(d.distance) })
-                    //     )
-                    //     // .attr("stroke", function(d){ return myColor(selectedGroup) })
                 }
 
                 // when an option is selected, call update
-                d3.select("#selectButton").on("change", function(d) {
+                d3.select("#income_selectButton").on("change", function(d) {
                     // recover the option that has been chosen
                     var selectedOption = d3.select(this).property("value")
                     // run the updateChart function with this selected option
