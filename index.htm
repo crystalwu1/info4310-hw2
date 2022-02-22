@@ -187,7 +187,7 @@
                 .call(edu_bottomAxis);
             edu_annotations.append("g")
                 .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(edu_bottomGridlines);
 
             bg_annotations.append("g")
@@ -204,7 +204,7 @@
                 .call(bg_bottomAxis);
             bg_annotations.append("g")
                 .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${chartHeight+margin.top-5})`)
+                .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(bg_bottomGridlines);
 
             // add axis labels
