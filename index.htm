@@ -3,12 +3,12 @@
         <meta charset="UTF-8">
         <script src="https://d3js.org/d3.v7.min.js"></script>
     </head>
-
     <!-- css styles -->
     <!-- styles taken from https://github.com/jeffrz/info4310-sp2022/blob/main/notes/22.02.07.notes.htm -->
     <style>
-        .body {
-          font-family: Poppins;
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+        #wrapper {
+          font-family: 'Poppins';
         }
         .gridlines line {
             stroke: #bbb;
@@ -22,10 +22,40 @@
             float:left;
         }
 
+        .caption {
+          font-size: 13px;
+        }
+
         .subtitle {
           /* font-weight: bold; */
-          font-size: 20px;
+          font-size: 17px;
+          margin-block-end: 0em;
         }
+
+        h2 {
+          margin-block-start: 0em;
+        }
+
+        .outline {
+          animation-duration: 3s;
+          animation-name: pulse;
+          animation-iteration-count: infinite;
+
+        }
+
+        @keyframes pulse {
+        from {
+          stroke-width: 1px;
+        }
+
+        50% {
+        stroke-width: 2px;
+        }
+
+        to {
+          stroke-width: 1px;
+        }
+      }
 
     </style>
 
@@ -46,7 +76,7 @@
 
               <div id="graph-wrapper" style="width:100%; height: 80%; display: flex; flex-wrap: wrap">
                   <div style="height: auto">
-                    <h1>Scores vs. Distance</h1>
+                    <h2>School Cost vs. Distance From Home</h2>
                     <!-- include low, med, and high -->
                     <svg id="edu_viz" height="350" width="500" style="margin-top:20px"></svg>
                     <div>
@@ -58,7 +88,7 @@
                   </div>
 
                   <div>
-                    <h1>Background vs. Distance</h2>
+                    <h2>Home State Wage vs. Distance From Home</h2>
                     <svg id="bg_viz" height="350" width="500" style="margin-top:20px"></svg>
                     <div>
                       <b>Wages:</b>
@@ -79,10 +109,10 @@
             <p id="home_header" class="subtitle"></p>
             <p id="eth_header" class="subtitle" style="margin-bottom: 0"></p>
             <svg id="eth_viz" height="300" width="300"></svg>
-            <div id="eth_mouseover" style="height:50px;"></div>
+            <div id="eth_mouseover" class="caption" style="height:50px;"></div>
             <p id="ped_header" class="subtitle"></p>
-            <svg id="ped_viz_all" height="35" width="400" style="overflow: visible;"></svg>
-            <div id="ped_mouseover" style="height:50px; padding-top: 20px"></div>
+            <svg id="ped_viz_all" height="35" width="400" style="overflow: visible; margin-top: 10px;"></svg>
+            <div id="ped_mouseover" class="caption" style="height:50px; padding-top: 20px"></div>
             <svg id="ped_viz_filtered" height="35" width="400" style="overflow: visible;"></svg>
             <div id="my_dataviz"></div>
             <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
@@ -204,7 +234,7 @@
             legend.append("svg").attr("width", 20).attr("height", 20)
                 .append("rect")
                 .attr('x', 0)
-                .attr('y', 2)
+                .attr('y', 12)
                 .attr("width", 18)
                 .attr("height", 18)
                 .attr("fill", colorScale);
@@ -213,6 +243,7 @@
                 .attr("x", 20)
                 .attr("y", 20)
                 .attr("dy", ".35em")
+                .style("margin-left", "5px")
                 .text(function (d) { return d+"\n"; });
 
             let leftAxis = d3.axisLeft(distanceScale)
@@ -441,9 +472,9 @@
                                     .attr("fill", "coral" );
 
 
-            let rect_outlines = eth_outlineArea.selectAll("rect.fil").data(ethdata)
+            let rect_outlines = eth_outlineArea.selectAll("rect.outline").data(ethdata)
                                     .join("rect")
-                                    .attr("class", "fil")
+                                    .attr("class", "outline")
                                     .attr("label", d => d[0])
                                     .attr("amt", d => d[1])
                                     .attr("x", d => ethScale(d[0])-8)
@@ -451,19 +482,22 @@
                                     .attr("height", d => chartHeight - freqScale(d[1] - 250))
                                     .attr("width", 16)
                                     .attr("fill-opacity", "0" )
+                                    .attr("fill", "white")
                                     .attr("stroke", 'black')
                                     .on("mouseover", function(d) {
                                       d3.select(this)
                                         .transition().duration(100)
-                                        .attr("stroke-width", 3)
+                                        .attr("stroke-width", "3")
                                         ethMouseover(d3.select(this).attr("label"), eth2)
-
+                                        d3.selectAll("rect.outline").style("animation-name", "none")
                                     })
                                     .on("mouseout", function(d) {
                                       d3.select(this)
                                         .transition().duration(100)
                                         .attr("stroke-width", 1)
+                                        .style("animation-name", "pulse")
                                         d3.select("#eth_mouseover").style("opacity", 0)
+                                        d3.selectAll("rect.outline").style("animation-name", "pulse")
                                     });
 
             function ethMouseover(label, eth2) {
@@ -527,11 +561,13 @@
                 d3.select(this)
                   highlightOther(d3.select(this).attr("label"))
                   pedMouseover(d3.select(this).attr("label"), one_fil, both_fil, none_fil)
+                  d3.selectAll("rect.outline").style("animation-name", "none")
               })
               .on("mouseout", function(d) {
                 d3.select(this)
                   hover.style("opacity", 0)
                   deselectOther(d3.select(this).attr("label"))
+                  d3.selectAll("rect.outline").style("animation-name", "pulse")
               })
 
             const hover = d3.select("#ped_mouseover")
@@ -626,6 +662,7 @@
                   d3.select("#ped_header").selectAll("*").remove();
 
                   if (scores == "all" && wages == "all" && income == "all") {
+                    console.log("all")
                       var filtered = college_filtered;
                       d3.select("#home_header").append("span").style("color", "coral").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of students'`);
                       d3.select("#home_header").append("text").text(` families own homes.`)
@@ -735,7 +772,7 @@
                                                 .attr("fill", "RebeccaPurple" );
 
                         d3.select("#home_header").append("span").style("color", "RebeccaPurple").text(`${Math.round(home2["yes"]/Object.keys(filtered).length*100)}% of these students'`);
-                        d3.select("#home_header").append("text").text(` families own homes`)
+                        d3.select("#home_header").append("text").text(` families own homes.`)
                         d3.select("#eth_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((eth2["afam"]+eth2["hispanic"])/(Object.keys(filtered).length)*100)}% of these students`);
                         d3.select("#eth_header").append("text").text(` were underrepresented minorities.`)
                         d3.select("#ped_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((one_fil + both_fil)/Object.keys(filtered).length*100, 2)}% of these students`);
