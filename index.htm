@@ -7,6 +7,9 @@
     <!-- css styles -->
     <!-- styles taken from https://github.com/jeffrz/info4310-sp2022/blob/main/notes/22.02.07.notes.htm -->
     <style>
+        .body {
+          font-family: Poppins;
+        }
         .gridlines line {
             stroke: #bbb;
         }
@@ -19,17 +22,27 @@
             float:left;
         }
 
+        .subtitle {
+          /* font-weight: bold; */
+          font-size: 20px;
+        }
+
     </style>
 
     <body>
         <!-- buttons -->
-        <div id="wrapper" style="display:flex; margin: 2%;">
+        <div id="wrapper" style="display:flex; margin: 2%; margin-top: 0">
           <div  style="width: 70%; margin: 1%">
-              <div id="title" style="width:100%; height:10%; margin-top: 2%; margin-bottom: 7%;">
+            <div id="graph-wrapper" style="width:100%; display: flex;">
+              <div id="title" style="width:85%; height:10%; margin-top: 2%;">
                 <h1> Title </h1>
                 <h3> Lydia Kim (lmk225), Crystal Wu (cw683) </h3>
                 <p> Description </p>
               </div>
+              <!-- legend for gender color -->
+              <div id="legend" style="margin-top: 7%"></div>
+            </div>
+
 
               <div id="graph-wrapper" style="width:100%; height: 80%; display: flex; flex-wrap: wrap">
                   <div style="height: auto">
@@ -59,19 +72,18 @@
                     </div>
                   </div>
               </div>
-              <div id="graph-wrapper" style="width:100%; height: 5%; display: flex;">
-                <!-- legend for gender color -->
-                <div id="legend"></div>
-              </div>
+
         </div>
-        <div id="side" style="width: 20%; height: 90%; margin: 3%">
-            <h2 id="sideBarTitle">Among all students surveyed...</h2>
-            <p id="home_header"></p>
-            <p id="eth_header"></p>
-            <svg id="eth_viz" height="300" width="300" style="margin:20px"></svg>
-            <p id="ped_header"></p>
-            <div id="ped_mouseover" />
-            <svg id="ped_viz" height="100" width="400" style="overflow: visible;"></svg>
+        <div id="side" style="width: 25%; height: 90%; margin: 3%">
+            <h2 id="sideBarTitle"></h2>
+            <p id="home_header" class="subtitle"></p>
+            <p id="eth_header" class="subtitle" style="margin-bottom: 0"></p>
+            <svg id="eth_viz" height="300" width="300"></svg>
+            <div id="eth_mouseover" style="height:50px;"></div>
+            <p id="ped_header" class="subtitle"></p>
+            <svg id="ped_viz_all" height="35" width="400" style="overflow: visible;"></svg>
+            <div id="ped_mouseover" style="height:50px; padding-top: 20px"></div>
+            <svg id="ped_viz_filtered" height="35" width="400" style="overflow: visible;"></svg>
             <div id="my_dataviz"></div>
             <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
             <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
@@ -82,160 +94,142 @@
             // build map
         const loadScatter = async function() {
 
-                // create scatter
-                const edu_scatter = d3.select("#edu_viz");
-                const bg_scatter = d3.select("#bg_viz");
-                const eth_scatter = d3.select("#eth_viz");
-                const ped_scatter = d3.select("#ped_viz");
+            // create scatter
+            const edu_scatter = d3.select("#edu_viz");
+            const bg_scatter = d3.select("#bg_viz");
 
-                // width of both scatter plots are the same, given that their sizes are the same
-                // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
-                const width = edu_scatter.attr("width");
-                const height = edu_scatter.attr("height");
-                const margin =  {top: 40, right: 40, bottom: 40, left: 40};
-                const chartWidth = width - margin.left - margin.right;
-                const chartHeight = height - margin.top - margin.right;
+            // width of both scatter plots are the same, given that their sizes are the same
+            // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
+            const width = edu_scatter.attr("width");
+            const height = edu_scatter.attr("height");
+            const margin =  {top: 40, right: 40, bottom: 40, left: 50};
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.right;
 
-                let edu_annotations = edu_scatter.append("g").attr("id","annotations");
-                let edu_chartArea = edu_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
+            let edu_annotations = edu_scatter.append("g").attr("id","annotations");
+            let edu_chartArea = edu_scatter.append("g").attr("id","points")
+                .attr("transform","translate("+margin.left+","+margin.top+")");
 
-                let bg_annotations = bg_scatter.append("g").attr("id","annotations");
-                let bg_chartArea = bg_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
+            let bg_annotations = bg_scatter.append("g").attr("id","annotations");
+            let bg_chartArea = bg_scatter.append("g").attr("id","points")
+                .attr("transform","translate("+margin.left+","+margin.top+")");
 
-                let eth_annotations = eth_scatter.append("g").attr("id","annotations");
-                let eth_chartArea = eth_scatter.append("g").attr("id","ethpoints")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
-                let eth_filterArea = eth_scatter.append("g").attr("id","ethpoints_filter")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
-                let eth_outlineArea = eth_scatter.append("g").attr("id","ethpoints_outline")
-                    .attr("transform","translate("+margin.left+","+margin.top+")");
+            // load dataset
+            const college_csv = await d3.csv("CollegeDistance.csv");
+            console.log(college_csv);
 
-                let ped_annotations = ped_scatter.append("g").attr("id","annotations");
-                let ped_chartArea = ped_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+5+","+margin.top+")");
-                let ped_filterArea = ped_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+5+","+margin.top+")");
-                let ped_outlineArea = ped_scatter.append("g").attr("id","points")
-                    .attr("transform","translate("+5+","+margin.top+")");
+            let scores = []
+            let backgr = []
+            // filter dataset
+            // change types as necessary
+            college_csv.forEach((d, i) => {
+                d['score'] = Number(d['score']);
+                d['urban'] = Number(d['urban']);
+                d['unemp'] = Number(d['unemp']);
+                d['wage'] = Number(d['wage']);
+                d['distance'] = Number(d['distance']);
+                d['tuition'] = Number(d['tuition']);
+                d['education'] = Number(d['education']);
+                scores.push(Number(d['score']));
+                backgr.push(Number(d['wage']));
+            });
 
-                // load dataset
-                const college_csv = await d3.csv("CollegeDistance.csv");
-                console.log(college_csv);
+            // remove rows where education is not twelve (exclude non-seniors)
+            college_filtered = college_csv.filter((d) => d["education"] === 12 );
+            console.log(college_filtered);
 
-                let scores = []
-                let backgr = []
-                // filter dataset
-                // change types as necessary
-                college_csv.forEach((d, i) => {
-                    d['score'] = Number(d['score']);
-                    d['urban'] = Number(d['urban']);
-                    d['unemp'] = Number(d['unemp']);
-                    d['wage'] = Number(d['wage']);
-                    d['distance'] = Number(d['distance']);
-                    d['tuition'] = Number(d['tuition']);
-                    d['education'] = Number(d['education']);
-                    scores.push(Number(d['score']));
-                    backgr.push(Number(d['wage']));
-                });
+            // group income values
+            // code found from https://github.com/d3/d3-array/blob/main/README.md#group
+            let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
 
-                // remove rows where education is not twelve (exclude non-seniors)
-                college_filtered = college_csv.filter((d) => d["education"] === 12 );
-                console.log(college_filtered);
+            // add options to the income dropdown
+            function createDropDown(selector, data, f) {
+                var options = d3.select(selector)
+                .selectAll('myOptions')
+ 	            .data(data)
+                .enter()
+	            .append('option')
+                .text(function (d) { return d; }) // text showed in the menu
+                .attr("value", f) // corresponding value returned by the button
+            }
 
-                // group income values
-                // code found from https://github.com/d3/d3-array/blob/main/README.md#group
-                let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
+            // create extent
+            const scoreExtent = d3.extent(college_filtered, d => d['score']);
+            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
+            const wageExtent = d3.extent(college_filtered, d => d['wage']);
+            const wageScale = d3.scaleLinear().domain(wageExtent).range([0, chartWidth]);
+            const distanceExtent = d3.extent(college_filtered, d => d['distance']);
+            // tried doing a log scale but didn't return valid numbers
+            const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
-                // add options to the income dropdown
-                function createDropDown(selector, data, f) {
-                    var options = d3.select(selector)
-                    .selectAll('myOptions')
-     	            .data(data)
-                    .enter()
-    	            .append('option')
-                    .text(function (d) { return d; }) // text showed in the menu
-                    .attr("value", f) // corresponding value returned by the button
-                }
+            //lm is 33%, mh 66%. use extent below for min/max
+            scores_lm = (scoreExtent[1] - scoreExtent[0]) / 3 + scoreExtent[0]
+            scores_mh = (scoreExtent[1] - scoreExtent[0]) / 3 * 2 + scoreExtent[0]
+            backgr_lm = (wageExtent[1] - wageExtent[0]) / 3 + wageExtent[0]
+            backgr_mh = (wageExtent[1] - wageExtent[0]) / 3 * 2+ wageExtent[0]
 
-                // create extent
-                const scoreExtent = d3.extent(college_filtered, d => d['score']);
-                const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
-                const wageExtent = d3.extent(college_filtered, d => d['wage']);
-                const wageScale = d3.scaleLinear().domain(wageExtent).range([0, chartWidth]);
-                const distanceExtent = d3.extent(college_filtered, d => d['distance']);
-                // tried doing a log scale but didn't return valid numbers
-                const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
+            console.log(scores_lm, scores_mh, backgr_lm, backgr_mh);
 
-                //lm is 33%, mh 66%. use extent below for min/max
-                scores_lm = (scoreExtent[1] - scoreExtent[0]) / 3 + scoreExtent[0]
-                scores_mh = (scoreExtent[1] - scoreExtent[0]) / 3 * 2 + scoreExtent[0]
-                backgr_lm = (wageExtent[1] - wageExtent[0]) / 3 + wageExtent[0]
-                backgr_mh = (wageExtent[1] - wageExtent[0]) / 3 * 2+ wageExtent[0]
+            // add options to scores, wages dropdown
+            const quantile_names = ["low", "medium", "high"]
+            var score_dict = {
+                "low": scores_lm,
+                "medium": scores_mh,
+                "high": scoreExtent[1]
+            };
+            var wage_dict = {
+                "low": backgr_lm,
+                "medium": backgr_mh,
+                "high": wageExtent[1]
+            };
 
-                console.log(scores_lm, scores_mh, backgr_lm, backgr_mh);
+            createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
+            createDropDown("#scores_selectButton", quantile_names, function (d) { return d; });
+            createDropDown("#wages_selectButton", quantile_names, function (d) { return d; });
+            var dropdownDict = {"#income_selectButton": "all", "#scores_selectButton": "all", "#wages_selectButton": "all"}
 
-                // add options to scores, wages dropdown
-                const quantile_names = ["low", "medium", "high"]
-                var score_dict = {
-                    "low": scores_lm,
-                    "medium": scores_mh,
-                    "high": scoreExtent[1]
-                };
-                var wage_dict = {
-                    "low": backgr_lm,
-                    "medium": backgr_mh,
-                    "high": wageExtent[1]
-                };
+            // create custom color scale for gender
+            var colors = ["hotpink", "deepskyblue"];
+            const colorScale = d3.scaleOrdinal().domain(["female", "male"]).range(colors);
 
-                createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
-                createDropDown("#scores_selectButton", quantile_names, function (d) { return d; });
-                createDropDown("#wages_selectButton", quantile_names, function (d) { return d; });
-                var dropdownDict = {"#income_selectButton": "all", "#scores_selectButton": "all", "#wages_selectButton": "all"}
+            // create legend
+            let legend = d3.select("div#legend");
+            legend = legend.selectAll("div.row")
+                .data(colorScale.domain())
+                .enter()
+                .append("div")
+                .style("padding", 10)
+                .attr("class", "row");
 
-                // create custom color scale for gender
-                var colors = ["red", "blue"];
-                const colorScale = d3.scaleOrdinal().domain(["female", "male"]).range(colors);
+            legend.append("svg").attr("width", 20).attr("height", 20)
+                .append("rect")
+                .attr('x', 0)
+                .attr('y', 2)
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", colorScale);
 
-                // create legend
-                let legend = d3.select("div#legend");
-                legend = legend.selectAll("div.row")
-                    .data(colorScale.domain())
-                    .enter()
-                    .append("div")
-                    .style("padding", 10)
-                    .attr("class", "row");
+            legend.append("text")
+                .attr("x", 20)
+                .attr("y", 20)
+                .attr("dy", ".35em")
+                .text(function (d) { return d+"\n"; });
 
-                legend.append("svg").attr("width", 20).attr("height", 20)
-                    .append("rect")
-                    .attr('x', 0)
-                    .attr('y', 2)
-                    .attr("width", 18)
-                    .attr("height", 18)
-                    .attr("fill", colorScale);
-
-                legend.append("text")
-                    .attr("x", 20)
-                    .attr("y", 20)
-                    .attr("dy", ".35em")
-                    .text(function (d) { return d+"\n"; });
-
-                let leftAxis = d3.axisLeft(distanceScale)
-                    .tickFormat(d3.format(""));
-                let leftGridlines = d3.axisLeft(distanceScale)
-                    .tickSize(-chartWidth-10)
-                    .tickFormat("");
-                let edu_bottomAxis = d3.axisBottom(scoreScale)
-                    .tickFormat(d3.format("~f"));  // exact value without commas
-                let edu_bottomGridlines = d3.axisBottom(scoreScale)
-                    .tickSize(-chartHeight-10)
-                    .tickFormat("");
-                let bg_bottomAxis = d3.axisBottom(wageScale)
-                    .tickFormat(d3.format("~f"));  // exact value without commas
-                let bg_bottomGridlines = d3.axisBottom(wageScale)
-                    .tickSize(-chartHeight-10)
-                    .tickFormat("");
+            let leftAxis = d3.axisLeft(distanceScale)
+                .tickFormat(d3.format(""));
+            let leftGridlines = d3.axisLeft(distanceScale)
+                .tickSize(-chartWidth-10)
+                .tickFormat("");
+            let edu_bottomAxis = d3.axisBottom(scoreScale)
+                .tickFormat(d3.format("~f"));  // exact value without commas
+            let edu_bottomGridlines = d3.axisBottom(scoreScale)
+                .tickSize(-chartHeight-10)
+                .tickFormat("");
+            let bg_bottomAxis = d3.axisBottom(wageScale)
+                .tickFormat(d3.format("~f"));  // exact value without commas
+            let bg_bottomGridlines = d3.axisBottom(wageScale)
+                .tickSize(-chartHeight-10)
+                .tickFormat("");
 
             // create axes and gridlines
             edu_annotations.append("g")
@@ -309,199 +303,241 @@
                 .attr("transform", "rotate(-90)")
                 .text("Distance (in 10 miles)");
 
-            //Side Bar Graphs
-            var eth = {"hispanic": 0, "afam": 0, "other": 0}
-            var inc = {"low": 0, "high": 0}
-            var home = {"yes": 0, "no": 0}
-            var ped = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
+          // function to create circles
+          function createCircles(chartArea, data, xScale, xCol) {
+              let circles = chartArea.selectAll("circle.point").data(data)
+              .join(enter => enter.append("circle")
+                  .attr("class","point")
+                  .attr("opacity", 0.75)
+                  )
+              .attr("cx", d => xScale(d[xCol]))
+              .attr("cy", d => distanceScale(d['distance']))
+              .attr("r", 3)
+              .attr("stroke", "white")
+              .attr("stroke-width", 0.5)
+              .attr("fill", d => colorScale(d['gender']));
+          }
 
-            college_filtered.forEach((d, i) => {
-                eth[d["ethnicity"]] += 1;
-                inc[d["income"]] += 1;
-                home[d["home"]] += 1;
-                if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
-                  ped["both"] += 1
-                  ped["mom"] += 1
-                  ped["dad"] += 1
-                } else if (d["fcollege"] == "yes") {
-                  ped["dad"] += 1
-                } else if (d["mcollege"] == "yes") {
-                  ped["mom"] += 1
-                }
-                else {
-                  ped["neither"] += 1
-                }
-            });
+          // add circles to main scatter plot
+          createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
+          createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
 
-            d3.select("#home_header").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of their families own homes`)
-            // side.append("br")
-            // side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% have parents that attended college`)
-            // side.append("text").text(`${Math.round(inc["low"]/(inc["high"]+inc["low"])*100)}% are from low income families`)
 
-            //PARENT EDUCATION HORIZONTAL BAR CHART
-            let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
-            let both = ped["both"]
-            let none = ped["neither"]
-            let pedScale = d3.scaleLinear().domain([0,none + one + both]).range([0,ped_scatter.attr("width") - margin.left - margin.right])
 
-            function ped_start(section) {
-              if (section == "none") {
-                return pedScale(0)
-              } else if (section == "one") {
-                return pedScale(none)
-              } else {
-                return pedScale(none + one)
+
+          const eth_bar = d3.select("#eth_viz");
+          const ped_bar = d3.select("#ped_viz_all");
+          const ped_bar_filter = d3.select("#ped_viz_filtered")
+          let eth_annotations = eth_bar.append("g").attr("id","annotations");
+          let eth_chartArea = eth_bar.append("g").attr("id","ethpoints")
+              .attr("transform","translate("+margin.left+","+margin.top+")");
+          let eth_filterArea = eth_bar.append("g").attr("id","ethpoints_filter")
+              .attr("transform","translate("+margin.left+","+margin.top+")");
+          let eth_outlineArea = eth_bar.append("g").attr("id","ethpoints_outline")
+              .attr("transform","translate("+margin.left+","+margin.top+")");
+
+          let ped_chartArea = ped_bar.append("g").attr("id","points")
+              .attr("transform","translate("+5+","+5+")");
+          let ped_outlineArea = ped_bar.append("g").attr("id","points")
+              .attr("transform","translate("+5+","+5+")");
+          let ped_chartArea_filter = ped_bar_filter.append("g").attr("id","points")
+              .attr("transform","translate("+5+","+5+")");
+          let ped_outlineArea_filter = ped_bar_filter.append("g").attr("id","points")
+              .attr("transform","translate("+5+","+5+")");
+
+
+          //Side Bar Graphs
+          let sideBarTitle = d3.select("#sideBarTitle")
+          sideBarTitle.selectAll("*").remove()
+          sideBarTitle.append("text").text("Among ")
+          sideBarTitle.append("span").text(`all ${Object.keys(college_filtered).length} students`).style("color", "coral");
+          sideBarTitle.append("text").text(" surveyed...")
+
+          var eth = {"hispanic": 0, "afam": 0, "other": 0}
+          let eth2 = {"hispanic": 0, "afam": 0, "other": 0}
+          var inc = {"low": 0, "high": 0}
+          var home = {"yes": 0, "no": 0}
+          var ped = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
+
+          college_filtered.forEach((d, i) => {
+              eth[d["ethnicity"]] += 1;
+              inc[d["income"]] += 1;
+              home[d["home"]] += 1;
+              if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
+                ped["both"] += 1
+                ped["mom"] += 1
+                ped["dad"] += 1
+              } else if (d["fcollege"] == "yes") {
+                ped["dad"] += 1
+              } else if (d["mcollege"] == "yes") {
+                ped["mom"] += 1
               }
+              else {
+                ped["neither"] += 1
+              }
+          });
+
+          d3.select("#home_header").append("span").style("color", "coral").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of students'`);
+          d3.select("#home_header").append("text").text(` families own homes.`)
+          d3.select("#eth_header").append("span").style("color", "coral").text(`${Math.round((eth["afam"]+eth["hispanic"])/(Object.keys(college_filtered).length)*100)}% of students`);
+          d3.select("#eth_header").append("text").text(` were underrepresented minorities.`)
+
+          //ETHNICITY BAR CHART
+          ethdata = Object.entries(eth)
+
+          let ethChartWidth = Number(eth_bar.attr("width"))- margin.left - margin.right;
+          let ethChartHeight = Number(eth_bar.attr("height"))- margin.top - margin.bottom;
+          const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([35, ethChartWidth/2, ethChartWidth-35]);
+          const ethScaleAxis = d3.scaleOrdinal().domain(["African American", "Hispanic", "Other"]).range([35, ethChartWidth/2, ethChartWidth-35]);
+
+          const freqExtent = d3.extent(Object.values(eth));
+          const freqScale = d3.scaleLinear().domain([0, freqExtent[1]]).range([ethChartHeight, 0]);
+
+          let ethleftAxis = d3.axisLeft(freqScale)
+          let ethleftGridlines = d3.axisLeft(freqScale)
+                                .tickSize(-ethChartWidth-10)
+                                .tickFormat("")
+          eth_annotations.append("g")
+            .attr("class", "y axis")
+            .attr("transform",`translate(${margin.left},${margin.top})`)
+            .call(ethleftAxis)
+          eth_annotations.append("g")
+            .attr("class", "y gridlines")
+            .attr("transform",`translate(${margin.left-10},${margin.top})`)
+            .call(ethleftGridlines);
+
+            // X axis
+            let ethbottomAxis = d3.axisBottom(ethScaleAxis)
+            let ethbottomGridlines = d3.axisBottom(ethScale)
+                                    .tickSize(-ethChartHeight-10)
+                                    .tickFormat("")
+            eth_annotations.append("g")
+              .attr("class", "x axis")
+              .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
+              .call(ethbottomAxis);
+            eth_annotations.append("g")
+              .attr("class", "x gridlines")
+              .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
+              .call(ethbottomGridlines);
+
+            eth_chartArea.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .style("font-size", 13)
+                .attr("x", margin.left - 100)
+                .attr("y", -chartHeight/2 + margin.bottom + 60)
+                .attr("transform", "rotate(-90)")
+                .text("Number of Students");
+
+            let rects = eth_chartArea.selectAll("rect.all").data(ethdata)
+                                    .join("rect")
+                                    .attr("class", "all")
+                                    .attr("label", d => d[0])
+                                    .attr("amt", d => d[1])
+                                    .attr("x", d => ethScale(d[0])-8)
+                                    .attr("y", d => freqScale(d[1]))
+                                    .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                    .attr("width", 16)
+                                    .attr("fill", "coral" );
+
+
+            let rect_outlines = eth_outlineArea.selectAll("rect.fil").data(ethdata)
+                                    .join("rect")
+                                    .attr("class", "fil")
+                                    .attr("label", d => d[0])
+                                    .attr("amt", d => d[1])
+                                    .attr("x", d => ethScale(d[0])-8)
+                                    .attr("y", d => freqScale(d[1]))
+                                    .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                    .attr("width", 16)
+                                    .attr("fill-opacity", "0" )
+                                    .attr("stroke", 'black')
+                                    .on("mouseover", function(d) {
+                                      d3.select(this)
+                                        .transition().duration(100)
+                                        .attr("stroke-width", 3)
+                                        ethMouseover(d3.select(this).attr("label"), eth2)
+
+                                    })
+                                    .on("mouseout", function(d) {
+                                      d3.select(this)
+                                        .transition().duration(100)
+                                        .attr("stroke-width", 1)
+                                        d3.select("#eth_mouseover").style("opacity", 0)
+                                    });
+
+            function ethMouseover(label, eth2) {
+              eth_mouseover = d3.select("#eth_mouseover")
+              eth_mouseover.selectAll("*").remove()
+              let all = eth[label]
+              let all_percent = Math.round( (all) / Object.keys(college_filtered).length*100, 2)
+
+              if (dropdownDict["#scores_selectButton"] == "all" && dropdownDict["#wages_selectButton"] == "all" && dropdownDict["#income_selectButton"] == "all") {
+                eth_mouseover.append("text").text(`Overall, `)
+                eth_mouseover.append("span").style("color", "coral").text(`${all_percent}% of students`);
+                eth_mouseover.append("text").text(` were ${(label == "afam") ? "African American" : (label == "hispanic") ? "Hispanic" : "a non-underrepresented minority"}.`)
+              } else {
+                let filtered = eth2[label]
+                let filtered_percent = Math.round( (filtered) / (eth2["afam"] + eth2["hispanic"] + eth2["other"]) *100, 2)
+                console.log(filtered_percent, all_percent, all_percent-filtered_percent)
+                eth_mouseover.append("span").style("color", "RebeccaPurple").text(`These students are
+                ${Math.abs(all_percent - filtered_percent)}%
+                `);
+                eth_mouseover.append("text").text(`${(((all_percent - filtered_percent) > 0) ? "less" : (((all_percent - filtered_percent) < 0) ? "more" : "equally"))} likely to be
+                ${(label == "afam") ? "African American" : (label == "hispanic") ? "Hispanic" : "a non-underrepresented minority"}.`)
+              }
+              eth_mouseover.style("opacity", 1);
             }
 
-            function ped_length(section, ped) {
-              let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
-              let both = ped["both"]
-              let none = ped["neither"]
-              if (section == "none") {
-                return pedScale(none)
-              } else if (section == "one") {
-                return pedScale(one)
-              } else {
-                return pedScale(both)
-              }
-            }
-            let ped_rect = ped_chartArea.selectAll("rect.all").data(["none", "one", "both"])
-                .join("rect")
-                .attr("class", "all")
-                .attr("x", d => ped_start(d))
-                .attr("y", 0)
-                .attr("width", d => ped_length(d, ped))
-                .attr("height", 50)
-                .attr("fill", "coral")
-                .attr("id", d => d);
 
-            let ped_outlines = ped_outlineArea.selectAll("rect.outline").data(["none", "one", "both"])
-                .enter()
-                .append('rect')
-                .attr("class", "outline")
-                .attr("x", d => ped_start(d))
-                .attr("y", 0)
-                .attr("width", d => ped_length(d, ped))
-                .attr("height", 50)
-                .attr("fill-opacity", "0")
-                .attr("stroke", 'black')
-                .attr("id", d => d)
-                .on("mouseover", function(d) {
-                  d3.select(this)
-                    .transition().duration(100)
-                    .attr("stroke-width", 3)
-                    hover.style("opacity", 1)
+          //PARENT EDUCATION HORIZONTAL BAR CHART
+          let one = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
+          let both = ped["both"]
+          let none = ped["neither"]
+          let one_fil = ped["dad"] + ped["mom"] - ped["both"] - ped["both"]
+          let both_fil = ped["both"]
+          let none_fil = ped["neither"]
+          let pedScale = d3.scaleLinear().domain([0,none + one + both]).range([0,ped_bar.attr("width") - margin.left - margin.right])
+          let pedColorScale = d3.scaleOrdinal().domain(["none", "one", "both"]).range([0.5, 0.75, 1])
 
-                })
-                .on("mouseout", function(d) {
-                  d3.select(this)
-                    .transition().duration(100)
-                    .attr("stroke-width", 1)
-                    hover.style("opacity", 0)
-                })
+          let ped_rect = ped_chartArea.selectAll("rect.all").data(["none", "one", "both"])
+              .join("rect")
+              .attr("class", "all")
+              .attr("x", d => (d == "none") ? pedScale(0) : ((d == "one") ? pedScale(none) : pedScale(none + one)))
+              .attr("y", 0)
+              .attr("width", d => (d == "none") ? pedScale(none) : ((d == "one") ? pedScale(one) : pedScale(both)))
+              .attr("height", 30)
+              .attr("fill", "coral")
+              .attr("opacity", d => pedColorScale(d))
+              .attr("id", d => d);
 
-            const hover = d3.select("#ped_mouseover").append("div").style("opacity", 0)
-            d3.select("#ped_header").text(`${Math.round((one + both)/Object.keys(college_filtered).length*100, 2)}% of students had one or more parents that attended college.`)
-            const ped_fil_one = hover.append("text")
-            const ped_fil_none = hover.append("text")
-            const ped_fil_both = hover.append("text")
+          let ped_outlines = ped_outlineArea.selectAll("rect.outline").data(["none", "one", "both"])
+              .enter()
+              .append('rect')
+              .attr("class", "outline")
+              .attr("label", d => d)
+              .attr("x", d => (d == "none") ? pedScale(0) : ((d == "one") ? pedScale(none) : pedScale(none + one)))
+              .attr("y", 0)
+              .attr("width", d => (d == "none") ? pedScale(none) : ((d == "one") ? pedScale(one) : pedScale(both)))
+              .attr("height", 30)
+              .attr("fill-opacity", "0")
+              .attr("stroke", 'black')
+              .attr("id", d => d)
+              .on("mouseover", function(d) {
+                d3.select(this)
+                  highlightOther(d3.select(this).attr("label"))
+                  pedMouseover(d3.select(this).attr("label"), one_fil, both_fil, none_fil)
+              })
+              .on("mouseout", function(d) {
+                d3.select(this)
+                  hover.style("opacity", 0)
+                  deselectOther(d3.select(this).attr("label"))
+              })
 
-
-            //ETHNICITY BAR CHART
-            ethdata = Object.entries(eth)
-
-            let ethChartWidth = Number(eth_scatter.attr("width"))- margin.left - margin.right;
-            let ethChartHeight = Number(eth_scatter.attr("height"))- margin.top - margin.bottom;
-            const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([margin.left, ethChartWidth/2, ethChartWidth-margin.left]);
-            const ethScaleAxis = d3.scaleOrdinal().domain(["African American", "Hispanic", "Other"]).range([margin.left, ethChartWidth/2, ethChartWidth-margin.left]);
-
-            const freqExtent = d3.extent(Object.values(eth));
-            const freqScale = d3.scaleLinear().domain([0, freqExtent[1]]).range([ethChartHeight, 0]);
-
-            let ethleftAxis = d3.axisLeft(freqScale)
-            let ethleftGridlines = d3.axisLeft(freqScale)
-                                  .tickSize(-ethChartWidth-10)
-                                  .tickFormat("")
-            eth_annotations.append("g")
-              .attr("class", "y axis")
-              .attr("transform",`translate(${margin.left},${margin.top})`)
-              .call(ethleftAxis)
-            eth_annotations.append("g")
-              .attr("class", "y gridlines")
-              .attr("transform",`translate(${margin.left-10},${margin.top})`)
-              .call(ethleftGridlines);
-
-              // X axis
-              let ethbottomAxis = d3.axisBottom(ethScaleAxis)
-              let ethbottomGridlines = d3.axisBottom(ethScale)
-                                      .tickSize(-ethChartHeight-10)
-                                      .tickFormat("")
-              eth_annotations.append("g")
-                .attr("class", "x axis")
-                .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
-                .call(ethbottomAxis);
-              eth_annotations.append("g")
-                .attr("class", "x gridlines")
-                .attr("transform",`translate(${margin.left},${Number(ethChartHeight)+margin.top})`)
-                .call(ethbottomGridlines);
-
-              let rects = eth_chartArea.selectAll("rect.all").data(ethdata)
-                                      .join("rect")
-                                      .attr("class", "all")
-                                      .attr("label", d => d[0])
-                                      .attr("amt", d => d[1])
-                                      .attr("x", d => ethScale(d[0])-8)
-                                      .attr("y", d => freqScale(d[1]))
-                                      .attr("height", d => chartHeight - freqScale(d[1] - 250))
-                                      .attr("width", 16)
-                                      .attr("fill", "orange" );
-
-
-              let rect_outlines = eth_outlineArea.selectAll("rect.fil").data(ethdata)
-                                      .join("rect")
-                                      .attr("class", "fil")
-                                      .attr("label", d => d[0])
-                                      .attr("amt", d => d[1])
-                                      .attr("x", d => ethScale(d[0])-8)
-                                      .attr("y", d => freqScale(d[1]))
-                                      .attr("height", d => chartHeight - freqScale(d[1] - 250))
-                                      .attr("width", 16)
-                                      .attr("fill-opacity", "0" )
-                                      .attr("stroke", 'black')
-                                      .on("mouseover", function(d) {
-                                        d3.select(this)
-                                          .transition().duration(100)
-                                          .attr("stroke-width", 3)
-
-                                      })
-                                      .on("mouseout", function(d) {
-                                        d3.select(this)
-                                          .transition().duration(100)
-                                          .attr("stroke-width", 1)
-                                      });
-
-             d3.select("#eth_header").text(`${Math.round((eth["afam"]+eth["hispanic"])/(Object.keys(college_filtered).length)*100)}% of them were underrepresented minorities.`)
-
-
-
-              // function to create circles
-              function createCircles(chartArea, data, xScale, xCol) {
-                  let circles = chartArea.selectAll("circle.point").data(data)
-                  .join(enter => enter.append("circle")
-                      .attr("class","point")
-                      .attr("opacity", 0.8)
-                      )
-                  .attr("cx", d => xScale(d[xCol]))
-                  .attr("cy", d => distanceScale(d['distance']))
-                  .attr("r", 2)
-                  .attr("fill", d => colorScale(d['gender']));
-              }
-
-              // add circles to main scatter plot
-              createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
-              createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
-
+            const hover = d3.select("#ped_mouseover")
+            let all_parents = Math.round((one + both)/Object.keys(college_filtered).length*100, 2)
+            d3.select("#ped_header").append("span").style("color", "coral").text(`${all_parents}% of students`);
+            d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
 
               function incomeCheck(condition, data) {
                 if (condition == "all") {
@@ -534,6 +570,49 @@
                   return data.score >= score_dict["high"]
                 }
               }
+
+              function highlightOther(label) {
+                let all = ped_outlineArea
+                let filter = ped_outlineArea_filter
+
+                all.select(`#${label}`).transition().duration(100)
+                .attr("stroke-width", 3)
+                filter.select(`#${label}`).transition().duration(100)
+                .attr("stroke-width", 3)
+                // console.log(all.select("#both"))
+                // console.log(filter.select("#both"))
+              }
+
+              function deselectOther(label) {
+                let all = ped_outlineArea
+                let filter = ped_outlineArea_filter
+
+                all.select(`#${label}`).transition().duration(100)
+                .attr("stroke-width", 1)
+                filter.select(`#${label}`).transition().duration(100)
+                .attr("stroke-width", 1)
+              }
+
+              function pedMouseover(label, one_fil, both_fil, none_fil) {
+                let all = (label == "none") ? none : (label == "one") ? one : both;
+                let all_percent = Math.round( (all) / Object.keys(college_filtered).length*100, 2)
+                hover.selectAll("*").remove()
+                if (dropdownDict["#scores_selectButton"] == "all" && dropdownDict["#wages_selectButton"] == "all" && dropdownDict["#income_selectButton"] == "all") {
+                  hover.append("text").text(`Overall,  `);
+                  hover.append("span").text(`${all_percent}% of students `).style("color", "coral");
+                  hover.append("text").text(`had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college.`)
+                } else {
+                  let filtered = (label == "none") ? none_fil : (label == "one") ? one_fil : both_fil
+                  let filtered_percent = Math.round( (filtered) / (one_fil + both_fil + none_fil) *100, 2)
+                  hover.append("span").text(`${filtered_percent}% of these students`).style("color", "RebeccaPurple");
+                  hover.append("text").text(` had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college, compared to `)
+                  hover.append("span").text(`${all_percent}% overall`).style("color", "coral");
+                  hover.append("text").text(`.`)
+                }
+                hover.style("opacity", 1);
+              }
+
+
               // code inspired from https://www.d3-graph-gallery.com/graph/line_filter.html
               // update scatter based on selection
               function update(dropdownDict) {
@@ -542,94 +621,153 @@
                   let income = dropdownDict["#income_selectButton"];
                   let wages = dropdownDict["#wages_selectButton"];
 
+                  d3.select("#home_header").selectAll("*").remove();
+                  d3.select("#eth_header").selectAll("*").remove();
+                  d3.select("#ped_header").selectAll("*").remove();
+
                   if (scores == "all" && wages == "all" && income == "all") {
                       var filtered = college_filtered;
-                      d3.select("#home_header").text(`${Math.round(home["yes"]/Object.keys(filtered).length*100)}% of their families own homes`)
-                      d3.select("#eth_header").text(`${Math.round((eth["afam"]+eth["hispanic"])/(Object.keys(filtered).length)*100)}% of them were underrepresented minorities.`)
-                      d3.select("#ped_header").text(`${Math.round((one + both)/Object.keys(college_filtered).length*100, 2)}% of students had one or more parents that attended college.`)
-                      ped_filterArea.attr("visibility", "hidden")
+                      d3.select("#home_header").append("span").style("color", "coral").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of students'`);
+                      d3.select("#home_header").append("text").text(` families own homes.`)
+                      d3.select("#eth_header").append("span").style("color", "coral").text(`${Math.round((eth["afam"]+eth["hispanic"])/(Object.keys(college_filtered).length)*100)}% of students`);
+                      d3.select("#eth_header").append("text").text(` were underrepresented minorities.`)
+                      d3.select("#ped_header").append("span").style("color", "coral").text(`${all_parents}% of students`);
+                      d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
+                      ped_chartArea_filter.attr("visibility", "hidden")
+                      ped_outlineArea_filter.attr("visibility", "hidden")
                       eth_filterArea.attr("visibility", "hidden")
                   }
                   else {
                       var filtered = college_filtered.filter(function(d){return incomeCheck(income, d) && wagesCheck(wages, d) && scoresCheck(scores, d)})
                       console.log(filtered)
-                      var eth2 = {"hispanic": 0, "afam": 0, "other": 0}
-                      var inc2 = {"low": 0, "high": 0}
-                      var home2 = {"yes": 0, "no": 0}
-                      var ped2 = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
 
-                      filtered.forEach((d, i) => {
-                          eth2[d["ethnicity"]] += 1;
-                          inc2[d["income"]] += 1;
-                          home2[d["home"]] += 1;
-                          if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
-                            ped2["both"] += 1
-                            ped2["mom"] += 1
-                            ped2["dad"] += 1
-                          } else if (d["fcollege"] == "yes") {
-                            ped2["dad"] += 1
-                          } else if (d["mcollege"] == "yes") {
-                            ped2["mom"] += 1
-                          }
-                          else {
-                            ped2["neither"] += 1
-                          }
-                      });
+                      if (Object.keys(filtered).length == 0) {
+                        d3.select("#side").style("visibility", "hidden")
+                        eth_filterArea.style("visibility", "hidden")
+                        eth_outlineArea.style("visibility", "hidden")
+                        ped_chartArea_filter.style("visibility", "hidden")
+                        ped_outlineArea_filter.style("visibility", "hidden")
+                        sideBarTitle.style("visibility", "visible")
+                      }
+                      else {
+                        d3.select("#side").style("visibility", "visible")
+                        eth_filterArea.style("visibility", "visible")
+                        eth_outlineArea.style("visibility", "visible")
+                        ped_chartArea_filter.style("visibility", "visible")
+                        ped_outlineArea_filter.style("visibility", "visible")
 
-                      ped_filterArea.attr("visibility", "visible")
-                      eth_filterArea.attr("visibility", "visible")
-                      let ped_filter = ped_filterArea.selectAll("rect.filter").data(["none", "one", "both"])
-                          .join("rect")
-                          .attr("class", "filter")
-                          .attr("x", d => ped_start(d))
-                          .attr("y", 0)
-                          .attr("width", d => ped_length(d, ped2))
-                          .attr("height", 50)
-                          .attr("fill", "pink")
-                          .attr("id", d => d);
+                        eth2 = {"hispanic": 0, "afam": 0, "other": 0}
+                        var inc2 = {"low": 0, "high": 0}
+                        var home2 = {"yes": 0, "no": 0}
+                        var ped2 = {"mom": 0, "dad": 0, "both": 0, "neither": 0}
 
-                      let rects_filter = eth_filterArea.selectAll("rect.filter").data(Object.entries(eth2))
-                                              .join("rect")
-                                              .attr("class", "filter")
-                                              .attr("label", d => d[0])
-                                              .attr("amt", d => d[1])
-                                              .attr("x", d => ethScale(d[0])-8)
-                                              .attr("y", d => freqScale(d[1]))
-                                              .attr("height", d => chartHeight - freqScale(d[1] - 250))
-                                              .attr("width", 16)
-                                              .attr("fill", "pink" );
+                        filtered.forEach((d, i) => {
+                            eth2[d["ethnicity"]] += 1;
+                            inc2[d["income"]] += 1;
+                            home2[d["home"]] += 1;
+                            if (d["fcollege"] == "yes" && d["mcollege"] == "yes") {
+                              ped2["both"] += 1
+                              ped2["mom"] += 1
+                              ped2["dad"] += 1
+                            } else if (d["fcollege"] == "yes") {
+                              ped2["dad"] += 1
+                            } else if (d["mcollege"] == "yes") {
+                              ped2["mom"] += 1
+                            }
+                            else {
+                              ped2["neither"] += 1
+                            }
+                        });
 
-                      let one = ped2["dad"] + ped2["mom"] - ped2["both"] - ped2["both"]
-                      let both = ped2["both"]
-                      let none = ped2["neither"]
-                      console.log(ped2)
-                      d3.select("#home_header").text(`${Math.round(home2["yes"]/Object.keys(filtered).length*100)}% of their families own homes`)
-                      d3.select("#eth_header").text(`${Math.round((eth2["afam"]+eth2["hispanic"])/(Object.keys(filtered).length)*100)}% of them were underrepresented minorities.`)
-                      d3.select("#ped_header").text(`${Math.round((one + both)/Object.keys(filtered).length*100, 2)}% of students had one or more parents that attended college.`)
-                      ped_fil_one.text(`${Math.round((one)/Object.keys(filtered).length*100, 2)}% of those students had one parent that attended college.`)
-                      ped_fil_none.text(`${Math.round((none)/Object.keys(filtered).length*100, 2)}% of those students had no parents that attended college.`)
-                      ped_fil_both.text(`${Math.round((both)/Object.keys(filtered).length*100, 2)}% of those students had two parents that attended college.`)
-                  }
-                  // give new data to circles
-                  createCircles(edu_chartArea, filtered, scoreScale, 'score')
-                  createCircles(bg_chartArea, filtered, wageScale, 'wage')
-                  updateSideHeader(Object.keys(filtered).length)
-              }
+                        ped_chartArea_filter.attr("visibility", "visible")
+                        ped_outlineArea_filter.attr("visibility", "visible")
+                        eth_filterArea.attr("visibility", "visible")
+                        one_fil = ped2["dad"] + ped2["mom"] - ped2["both"] - ped2["both"]
+                        both_fil = ped2["both"]
+                        none_fil = ped2["neither"]
+                        let pedScale2 = d3.scaleLinear().domain([0,none_fil + one_fil + both_fil]).range([0,ped_bar.attr("width") - margin.left - margin.right])
 
-                function updateSideHeader(size) {
-                  var incomeSelector = d3.select("#income_selectButton").property("value")
-                  var scoreSelector = d3.select("#scores_selectButton").property("value")
-                  var wageSelector = d3.select("#wages_selectButton").property("value")
+                        let ped_rect_filter = ped_chartArea_filter.selectAll("rect.all").data(["none", "one", "both"])
+                            .join("rect")
+                            .attr("class", "all")
+                            .attr("x", d => (d == "none") ? pedScale2(0) : ((d == "one") ? pedScale2(none_fil) : pedScale2(none_fil + one_fil)))
+                            .attr("y", 0)
+                            .attr("width", d => (d == "none") ? pedScale2(none_fil) : ((d == "one") ? pedScale2(one_fil) : pedScale2(both_fil)))
+                            .attr("height", 30)
+                            .attr("fill", "RebeccaPurple")
+                            .attr("opacity", d => pedColorScale(d))
+                            .attr("id", d => d);
 
-                  let sideBarTitle = d3.select("#sideBarTitle")
+                        ped_outlineArea_filter.selectAll("*").remove()
+                        let ped_outlines_filter = ped_outlineArea_filter.selectAll("rect.outline").data(["none", "one", "both"])
+                            .enter()
+                            .append('rect')
+                            .attr("class", "outline")
+                            .attr("label", d => d)
+                            .attr("x", d => (d == "none") ? pedScale2(0) : ((d == "one") ? pedScale2(none_fil) : pedScale2(none_fil + one_fil)))
+                            .attr("y", 0)
+                            .attr("width", d => (d == "none") ? pedScale2(none_fil) : ((d == "one") ? pedScale2(one_fil) : pedScale2(both_fil)))
+                            .attr("height", 30)
+                            .attr("fill-opacity", "0")
+                            .attr("stroke", 'black')
+                            .attr("id", d => d)
+                            .on("mouseover", function(d) {
+                              d3.select(this)
+                                hover.style("opacity", 1)
+                                highlightOther(d3.select(this).attr("label"))
+                                pedMouseover(d3.select(this).attr("label"), one_fil, both_fil, none_fil)
+                            })
+                            .on("mouseout", function(d) {
+                              d3.select(this)
+                                hover.style("opacity", 0)
+                                deselectOther(d3.select(this).attr("label"))
+                            })
 
-                  if (incomeSelector == "all" && scoreSelector == "all" && wageSelector == "all") {
-                    sideBarTitle.text("Among all students surveyed...")
-                  } else {
-                    incomeSelector = (incomeSelector == "all") ? "" : `from ${incomeSelector}-income families`
-                    scoreSelector = (scoreSelector == "all") ? "" : `with ${scoreSelector} test scores`
-                    wageSelector = (wageSelector == "all") ? "" : `in ${wageSelector}-income counties`
-                    sideBarTitle.text(`There were ${size} students ${incomeSelector} ${scoreSelector} ${wageSelector} out of ${Object.keys(college_filtered).length}.`)
+                        let rects_filter = eth_filterArea.selectAll("rect.filter").data(Object.entries(eth2))
+                                                .join("rect")
+                                                .attr("class", "filter")
+                                                .attr("label", d => d[0])
+                                                .attr("amt", d => d[1])
+                                                .attr("x", d => ethScale(d[0])-8)
+                                                .attr("y", d => freqScale(d[1]))
+                                                .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                                .attr("width", 16)
+                                                .attr("fill", "RebeccaPurple" );
+
+                        d3.select("#home_header").append("span").style("color", "RebeccaPurple").text(`${Math.round(home2["yes"]/Object.keys(filtered).length*100)}% of these students'`);
+                        d3.select("#home_header").append("text").text(` families own homes`)
+                        d3.select("#eth_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((eth2["afam"]+eth2["hispanic"])/(Object.keys(filtered).length)*100)}% of these students`);
+                        d3.select("#eth_header").append("text").text(` were underrepresented minorities.`)
+                        d3.select("#ped_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((one_fil + both_fil)/Object.keys(filtered).length*100, 2)}% of these students`);
+                        d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
+                    }
+                    // give new data to circles
+                    createCircles(edu_chartArea, filtered, scoreScale, 'score')
+                    createCircles(bg_chartArea, filtered, wageScale, 'wage')
+                    updateSideHeader(Object.keys(filtered).length)
+                }
+
+                  function updateSideHeader(size) {
+                    var incomeSelector = d3.select("#income_selectButton").property("value")
+                    var scoreSelector = d3.select("#scores_selectButton").property("value")
+                    var wageSelector = d3.select("#wages_selectButton").property("value")
+
+
+                    sideBarTitle.selectAll("*").remove()
+                    if (incomeSelector == "all" && scoreSelector == "all" && wageSelector == "all") {
+                      sideBarTitle.append("text").text("Among ")
+                      sideBarTitle.append("span").text(`all ${Object.keys(college_filtered).length} students`).style("color", "coral");
+                      sideBarTitle.append("text").text(" surveyed...")
+                    } else {
+                      incomeSelector = (incomeSelector == "all") ? "" : `from ${incomeSelector}-income families`
+                      scoreSelector = (scoreSelector == "all") ? "" : `with ${scoreSelector} test scores`
+                      wageSelector = (wageSelector == "all") ? "" : `in ${wageSelector}-income counties`
+                      sideBarTitle.append("text").text(`There were `);
+                      sideBarTitle.append("span").text(`${size} students ${incomeSelector} ${scoreSelector} ${wageSelector}`).style("color", "RebeccaPurple");
+                      sideBarTitle.append("text").text(` out of `);
+                      sideBarTitle.append("span").text(`${Object.keys(college_filtered).length} total`).style("color", "coral");
+                      sideBarTitle.append("text").text(`.`);
+                    }
                   }
                 }
 
@@ -642,16 +780,12 @@
                     update(dropdownDict)
                 })
                 d3.select("#scores_selectButton").on("change", function(d) {
-                    // recover the option that has been chosen
                     var selectedOption = d3.select(this).property("value")
-                    // run the updateChart function with this selected option
                     dropdownDict["#scores_selectButton"] = selectedOption
                     update(dropdownDict)
                 })
                 d3.select("#wages_selectButton").on("change", function(d) {
-                    // recover the option that has been chosen
                     var selectedOption = d3.select(this).property("value")
-                    // run the updateChart function with this selected option
                     dropdownDict["#wages_selectButton"] = selectedOption
                     update(dropdownDict)
                 })
