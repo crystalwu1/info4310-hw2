@@ -104,7 +104,7 @@
               </div>
 
               <div id="dropdowns" style="width:100%; display: flex; flex-wrap: wrap; margin-top: 20px; justify-content: center">
-                <b>Student Test Scores:</b>
+                <b>School Tution:</b>
                 <select id="scores_selectButton">
                     <option value="all">all</option>
                 </select>
@@ -112,10 +112,13 @@
                 <select id="income_selectButton">
                     <option value="all">all</option>
                 </select>
-                <b>Home State Avg. Hourly Wage:</b>
+                <b>Home County Unemployment Rate:</b>
                 <select id="wages_selectButton">
                     <option value="all">all</option>
                 </select>
+              </div>
+
+              <div id="score_legend" style="width:100%; display: flex; flex-wrap: wrap; margin-top: 20px; justify-content: center; height: 20px">
               </div>
 
         </div>
@@ -163,25 +166,28 @@
             const college_csv = await d3.csv("CollegeDistance.csv");
             console.log(college_csv);
 
-            let scores = []
+            let tuitions = []
             let backgr = []
             // filter dataset
             // change types as necessary
             college_csv.forEach((d, i) => {
                 d['score'] = Number(d['score']);
                 d['urban'] = Number(d['urban']);
-                d['unemp'] = Number(d['unemp']);
+                d['unemp'] = Number(d['unemp'])/100;
                 d['wage'] = Number(d['wage']);
                 d['distance'] = Number(d['distance'])*10;
-                d['tuition'] = Number(d['tuition']);
+                d['tuition'] = Number(d['tuition']*1000);
                 d['education'] = Number(d['education']);
-                scores.push(Number(d['score']));
-                backgr.push(Number(d['wage']));
             });
 
             // remove rows where education is not twelve (exclude non-seniors)
             college_filtered = college_csv.filter((d) => d["education"] === 12 );
             console.log(college_filtered);
+
+            college_filtered.forEach((d, i) => {
+              tuitions.push(Number(d['tuition']));
+              backgr.push(Number(d['wage']));
+            })
 
             // group income values
             // code found from https://github.com/d3/d3-array/blob/main/README.md#group
@@ -202,34 +208,32 @@
             const tuitionExtent = d3.extent(college_filtered, d => d['tuition']);
             const tuitionScale = d3.scaleLinear().domain(tuitionExtent).range([0, chartWidth]);
             const scoreExtent = d3.extent(college_filtered, d => d['score']);
-            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([1, 7]);
+            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([2, 7]);
             const unempExtent = d3.extent(college_filtered, d => d['unemp']);
             const unempScale = d3.scaleLinear().domain(unempExtent).range([0, chartWidth]);
-            const wageExtent = d3.extent(college_filtered, d => d['wage']);
-            const wageScale = d3.scaleLinear().domain(wageExtent).range([0, chartWidth]);
             const distanceExtent = d3.extent(college_filtered, d => d['distance']);
             // tried doing a log scale but didn't return valid numbers
             const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
             //lm is 33%, mh 66%. use extent below for min/max
-            scores_lm = (scoreExtent[1] - scoreExtent[0]) / 3 + scoreExtent[0]
-            scores_mh = (scoreExtent[1] - scoreExtent[0]) / 3 * 2 + scoreExtent[0]
-            backgr_lm = (wageExtent[1] - wageExtent[0]) / 3 + wageExtent[0]
-            backgr_mh = (wageExtent[1] - wageExtent[0]) / 3 * 2+ wageExtent[0]
+            tuition_lm = d3.quantile(tuitions, 0.33)
+            tuition_mh = d3.quantile(tuitions, 0.66)
+            backgr_lm = d3.quantile(backgr, 0.33)
+            backgr_mh = d3.quantile(backgr, 0.66)
 
-            console.log(scores_lm, scores_mh, backgr_lm, backgr_mh);
+            console.log(tuition_lm, tuition_mh, backgr_lm, backgr_mh);
 
             // add options to scores, wages dropdown
             const quantile_names = ["low", "medium", "high"]
             var score_dict = {
-                "low": scores_lm,
-                "medium": scores_mh,
-                "high": scoreExtent[1]
+                "low": tuition_lm,
+                "medium": tuition_mh,
+                "high": tuitionExtent[1]
             };
             var wage_dict = {
                 "low": backgr_lm,
                 "medium": backgr_mh,
-                "high": wageExtent[1]
+                "high": unempExtent[1]
             };
 
             createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
@@ -291,18 +295,40 @@
 
             side_legend.style("visibility", "hidden")
 
+            let score_legend = d3.select("#score_legend")
+            score_legend.append("text").text(`Student Test Score:  `).style("margin-right", "10px")
+            score_legend.append("text").text(` ${Math.round(scoreExtent[0], 2)}`)
+            score_legend.append("svg")
+            .attr("width", 20)
+            .attr("height", 20)
+            .append("circle")
+                .attr("fill","black")
+                .attr("opacity", "0.75")
+                .attr("r", scoreScale(scoreExtent[0]))
+                .attr("cx", 10)
+                .attr("cy", 10)
+            score_legend.append("text").text(`${Math.round(scoreExtent[1], 2)}`)
+            score_legend.append("svg").attr("width", 20)
+            .attr("height", 20).append("circle")
+                .attr("fill","black")
+                .attr("opacity", "0.75")
+                .attr("r", scoreScale(scoreExtent[1]))
+                .attr("cx", 10)
+                .attr("cy", 10)
+
+
             let leftAxis = d3.axisLeft(distanceScale)
                 .tickFormat(d3.format(""));
             let leftGridlines = d3.axisLeft(distanceScale)
                 .tickSize(-chartWidth-10)
                 .tickFormat("");
             let edu_bottomAxis = d3.axisBottom(tuitionScale)
-                .tickFormat(d3.format("~f"));  // exact value without commas
+                .tickFormat(d3.format("$,"));  // exact value without commas
             let edu_bottomGridlines = d3.axisBottom(tuitionScale)
                 .tickSize(-chartHeight-10)
                 .tickFormat("");
             let bg_bottomAxis = d3.axisBottom(unempScale)
-                .tickFormat(d3.format("~f"));  // exact value without commas
+                .tickFormat(d3.format(",.0%"));  // exact value without commas
             let bg_bottomGridlines = d3.axisBottom(unempScale)
                 .tickSize(-chartHeight-10)
                 .tickFormat("");
@@ -388,7 +414,7 @@
                   )
               .attr("cx", d => xScale(d[xCol]))
               .attr("cy", d => distanceScale(d['distance']))
-              .attr("r", d => (xCol != "1tuition") ? scoreScale(d["score"]) : 3)
+              .attr("r", d => scoreScale(d["score"]))
               .attr("stroke", "white")
               .attr("stroke-width", 0.5)
               .attr("fill", d => colorScale(d['gender']));
@@ -633,11 +659,11 @@
                 if (condition == "all") {
                   return true
                 } else if (condition == "low"){
-                  return data.wage < wage_dict["low"]
+                  return data.unemp < wage_dict["low"]
                 } else if (condition == "medium") {
-                  return data.wage >= wage_dict["low"] && data.wage < wage_dict["high"]
+                  return data.unemp >= wage_dict["low"] && data.unemp < wage_dict["high"]
                 } else {
-                  return data.wage >= wage_dict["high"]
+                  return data.unemp >= wage_dict["high"]
                 }
               }
 
@@ -645,11 +671,11 @@
                 if (condition == "all") {
                   return true
                 } else if (condition == "low"){
-                  return data.score < score_dict["low"]
+                  return data.tuition < score_dict["low"]
                 } else if (condition == "medium") {
-                  return data.score >= score_dict["low"] && data.score < score_dict["high"]
+                  return data.tuition >= score_dict["low"] && data.tuition < score_dict["high"]
                 } else {
-                  return data.score >= score_dict["high"]
+                  return data.tuition >= score_dict["high"]
                 }
               }
 
