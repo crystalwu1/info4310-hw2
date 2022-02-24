@@ -28,18 +28,29 @@
 
         .subtitle {
           /* font-weight: bold; */
-          font-size: 17px;
+          font-size: 16px;
           margin-block-end: 0em;
+        }
+
+        h5 {
+          margin-block-end: 0em;
+          margin-block-start: 0em;
         }
 
         h2 {
           margin-block-start: 0em;
+          font-size: 20px;
+        }
+
+        select {
+          margin-right: 20px;
+          margin-left: 20px;
         }
 
         .outline {
-          animation-duration: 3s;
+          /* animation-duration: 3s;
           animation-name: pulse;
-          animation-iteration-count: infinite;
+          animation-iteration-count: infinite; */
 
         }
 
@@ -57,6 +68,10 @@
         }
       }
 
+      .graph_title {
+        font-size: 20px;
+      }
+
     </style>
 
     <body>
@@ -64,52 +79,52 @@
         <div id="wrapper" style="display:flex; margin: 2%; margin-top: 0">
           <div  style="width: 70%; margin: 1%">
             <div id="graph-wrapper" style="width:100%; display: flex;">
-              <div id="title" style="width:85%; height:10%; margin-top: 2%;">
-                <h1> Title </h1>
-                <h3> Lydia Kim (lmk225), Crystal Wu (cw683) </h3>
-                <p> Description </p>
+              <div id="title" style="width:75%;">
+                <h1> What students go to college far from home? </h1>
+                <h5> Lydia Kim (lmk225), Crystal Wu (cw683) </h5>
+                <p> In 1980, the National Center for Education Statistics conducted a longitudinal survey to observe the development of young people. We used a cross-section of the data from the original survey to investigate patterns in how far students moved to attend 4-year colleges and universities.</p>
               </div>
               <!-- legend for gender color -->
-              <div id="legend" style="margin-top: 7%"></div>
+              <div id="legend" style="margin-top: 11%; margin-left: 20px"></div>
+              <div id="side-legend" style="margin-top: 11%"></div>
             </div>
 
 
-              <div id="graph-wrapper" style="width:100%; height: 80%; display: flex; flex-wrap: wrap">
+              <div id="graph-wrapper" style="width:100%; display: flex; flex-wrap: wrap; justify-content: center">
                   <div style="height: auto">
-                    <h2>School Cost vs. Distance From Home</h2>
+                    <h2 class="graph_title">School Cost vs. Distance</h2>
                     <!-- include low, med, and high -->
-                    <svg id="edu_viz" height="350" width="500" style="margin-top:20px"></svg>
-                    <div>
-                      <b>Scores:</b>
-                      <select id="scores_selectButton">
-                          <option value="all">all</option>
-                      </select>
-                    </div>
+                    <svg id="edu_viz" height="400" width="470"></svg>
                   </div>
 
                   <div>
-                    <h2>Home State Wage vs. Distance From Home</h2>
-                    <svg id="bg_viz" height="350" width="500" style="margin-top:20px"></svg>
-                    <div>
-                      <b>Wages:</b>
-                      <select id="wages_selectButton">
-                          <option value="all">all</option>
-                      </select>
-                      <b>Income:</b>
-                      <select id="income_selectButton">
-                          <option value="all">all</option>
-                      </select>
-                    </div>
+                    <h2 class="graph_title">Home Unemployment Rate vs. Distance</h2>
+                    <svg id="bg_viz" height="400" width="470"></svg>
                   </div>
               </div>
 
+              <div id="dropdowns" style="width:100%; display: flex; flex-wrap: wrap; margin-top: 20px; justify-content: center">
+                <b>Student Test Scores:</b>
+                <select id="scores_selectButton">
+                    <option value="all">all</option>
+                </select>
+                <b>Family Income:</b>
+                <select id="income_selectButton">
+                    <option value="all">all</option>
+                </select>
+                <b>Home State Avg. Hourly Wage:</b>
+                <select id="wages_selectButton">
+                    <option value="all">all</option>
+                </select>
+              </div>
+
         </div>
-        <div id="side" style="width: 25%; height: 90%; margin: 3%">
+        <div id="side" style="width: 25%; margin: 3%">
             <h2 id="sideBarTitle"></h2>
             <p id="home_header" class="subtitle"></p>
             <p id="eth_header" class="subtitle" style="margin-bottom: 0"></p>
-            <svg id="eth_viz" height="300" width="300"></svg>
-            <div id="eth_mouseover" class="caption" style="height:50px;"></div>
+            <svg id="eth_viz" height="250" width="300"></svg>
+            <div id="eth_mouseover" class="caption" style="height:40px; margin-top: 10px"></div>
             <p id="ped_header" class="subtitle"></p>
             <svg id="ped_viz_all" height="35" width="400" style="overflow: visible; margin-top: 10px;"></svg>
             <div id="ped_mouseover" class="caption" style="height:50px; padding-top: 20px"></div>
@@ -132,9 +147,9 @@
             // code inspired by prof rz's notes in https://jeffrz.github.io/info4310-sp2022/notes/22.02.07.notes.htm
             const width = edu_scatter.attr("width");
             const height = edu_scatter.attr("height");
-            const margin =  {top: 40, right: 40, bottom: 40, left: 50};
+            const margin =  {top: 10, right: 20, bottom: 70, left: 70};
             const chartWidth = width - margin.left - margin.right;
-            const chartHeight = height - margin.top - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
 
             let edu_annotations = edu_scatter.append("g").attr("id","annotations");
             let edu_chartArea = edu_scatter.append("g").attr("id","points")
@@ -157,7 +172,7 @@
                 d['urban'] = Number(d['urban']);
                 d['unemp'] = Number(d['unemp']);
                 d['wage'] = Number(d['wage']);
-                d['distance'] = Number(d['distance']);
+                d['distance'] = Number(d['distance'])*10;
                 d['tuition'] = Number(d['tuition']);
                 d['education'] = Number(d['education']);
                 scores.push(Number(d['score']));
@@ -184,8 +199,12 @@
             }
 
             // create extent
+            const tuitionExtent = d3.extent(college_filtered, d => d['tuition']);
+            const tuitionScale = d3.scaleLinear().domain(tuitionExtent).range([0, chartWidth]);
             const scoreExtent = d3.extent(college_filtered, d => d['score']);
-            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([0, chartWidth]);
+            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([1, 7]);
+            const unempExtent = d3.extent(college_filtered, d => d['unemp']);
+            const unempScale = d3.scaleLinear().domain(unempExtent).range([0, chartWidth]);
             const wageExtent = d3.extent(college_filtered, d => d['wage']);
             const wageScale = d3.scaleLinear().domain(wageExtent).range([0, chartWidth]);
             const distanceExtent = d3.extent(college_filtered, d => d['distance']);
@@ -246,19 +265,45 @@
                 .style("margin-left", "5px")
                 .text(function (d) { return d+"\n"; });
 
+            let side_legend = d3.select("div#side-legend");
+            let side_legend_color = d3.scaleOrdinal().domain(["all", "selected"]).range(["coral", "RebeccaPurple"])
+            side_legend = side_legend.selectAll("div.row")
+                .data(side_legend_color.domain())
+                .enter()
+                .append("div")
+                .attr("class", d => (d + " row"))
+                .style("padding", 10)
+
+            side_legend.append("svg").attr("width", 20).attr("height", 20)
+                .append("rect")
+                .attr('x', 0)
+                .attr('y', 12)
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", side_legend_color);
+
+            side_legend.append("text")
+                .attr("x", 20)
+                .attr("y", 20)
+                .attr("dy", ".35em")
+                .style("margin-left", "5px")
+                .text(function (d) { return d+"\n"; });
+
+            side_legend.style("visibility", "hidden")
+
             let leftAxis = d3.axisLeft(distanceScale)
                 .tickFormat(d3.format(""));
             let leftGridlines = d3.axisLeft(distanceScale)
                 .tickSize(-chartWidth-10)
                 .tickFormat("");
-            let edu_bottomAxis = d3.axisBottom(scoreScale)
+            let edu_bottomAxis = d3.axisBottom(tuitionScale)
                 .tickFormat(d3.format("~f"));  // exact value without commas
-            let edu_bottomGridlines = d3.axisBottom(scoreScale)
+            let edu_bottomGridlines = d3.axisBottom(tuitionScale)
                 .tickSize(-chartHeight-10)
                 .tickFormat("");
-            let bg_bottomAxis = d3.axisBottom(wageScale)
+            let bg_bottomAxis = d3.axisBottom(unempScale)
                 .tickFormat(d3.format("~f"));  // exact value without commas
-            let bg_bottomGridlines = d3.axisBottom(wageScale)
+            let bg_bottomGridlines = d3.axisBottom(unempScale)
                 .tickSize(-chartHeight-10)
                 .tickFormat("");
 
@@ -303,36 +348,36 @@
                 .attr("text-anchor", "middle")
                 .style("font-size", 13)
                 .attr("x", chartWidth/2)
-                .attr("y", chartHeight + margin.top - 10)
+                .attr("y", chartHeight + margin.top +25)
                 // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
-                .text("Test Scores");
+                .text("School Tuition");
 
             edu_chartArea.append("text")
                 .attr("class", "y label")
                 .attr("text-anchor", "end")
                 .style("font-size", 13)
-                .attr("x", margin.left - 100)
-                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("x", margin.left - chartHeight/2)
+                .attr("y", -chartHeight/2 + margin.bottom + 45)
                 .attr("transform", "rotate(-90)")
-                .text("Distance (in 10 miles)");
+                .text("Distance to College (mi)");
 
             bg_chartArea.append("text")
                 .attr("class", "x label")
                 .attr("text-anchor", "middle")
                 .style("font-size", 13)
                 .attr("x", chartWidth/2)
-                .attr("y", chartHeight + margin.top - 10)
+                .attr("y", chartHeight + margin.top + 25)
                 // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
-                .text("State Hourly Wage");
+                .text("Home County Unemployment Rate");
 
             bg_chartArea.append("text")
                 .attr("class", "y label")
                 .attr("text-anchor", "end")
                 .style("font-size", 13)
-                .attr("x", margin.left - 100)
-                .attr("y", -chartHeight/2 + margin.bottom + 65)
+                .attr("x", margin.left - chartHeight/2)
+                .attr("y", -chartHeight/2 + margin.bottom + 45)
                 .attr("transform", "rotate(-90)")
-                .text("Distance (in 10 miles)");
+                .text("Distance to College (mi)");
 
           // function to create circles
           function createCircles(chartArea, data, xScale, xCol) {
@@ -343,15 +388,16 @@
                   )
               .attr("cx", d => xScale(d[xCol]))
               .attr("cy", d => distanceScale(d['distance']))
-              .attr("r", 3)
+              .attr("r", d => (xCol != "1tuition") ? scoreScale(d["score"]) : 3)
               .attr("stroke", "white")
               .attr("stroke-width", 0.5)
               .attr("fill", d => colorScale(d['gender']));
+
           }
 
           // add circles to main scatter plot
-          createCircles(edu_chartArea, college_filtered, scoreScale, 'score')
-          createCircles(bg_chartArea, college_filtered, wageScale, 'wage')
+          createCircles(edu_chartArea, college_filtered, tuitionScale, 'tuition')
+          createCircles(bg_chartArea, college_filtered, unempScale, 'unemp')
 
 
 
@@ -417,7 +463,7 @@
           ethdata = Object.entries(eth)
 
           let ethChartWidth = Number(eth_bar.attr("width"))- margin.left - margin.right;
-          let ethChartHeight = Number(eth_bar.attr("height"))- margin.top - margin.bottom;
+          let ethChartHeight = Number(eth_bar.attr("height"))- margin.top - 20;
           const ethScale = d3.scaleOrdinal().domain(["afam", "hispanic", "other"]).range([35, ethChartWidth/2, ethChartWidth-35]);
           const ethScaleAxis = d3.scaleOrdinal().domain(["African American", "Hispanic", "Other"]).range([35, ethChartWidth/2, ethChartWidth-35]);
 
@@ -455,8 +501,8 @@
                 .attr("class", "y label")
                 .attr("text-anchor", "end")
                 .style("font-size", 13)
-                .attr("x", margin.left - 100)
-                .attr("y", -chartHeight/2 + margin.bottom + 60)
+                .attr("x", margin.left - 125)
+                .attr("y", -chartHeight/2 + margin.bottom + 50)
                 .attr("transform", "rotate(-90)")
                 .text("Number of Students");
 
@@ -467,7 +513,7 @@
                                     .attr("amt", d => d[1])
                                     .attr("x", d => ethScale(d[0])-8)
                                     .attr("y", d => freqScale(d[1]))
-                                    .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                    .attr("height", d => chartHeight - freqScale(d[1]) - 100)
                                     .attr("width", 16)
                                     .attr("fill", "coral" );
 
@@ -479,7 +525,7 @@
                                     .attr("amt", d => d[1])
                                     .attr("x", d => ethScale(d[0])-8)
                                     .attr("y", d => freqScale(d[1]))
-                                    .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                    .attr("height", d => chartHeight - freqScale(d[1]) - 100)
                                     .attr("width", 16)
                                     .attr("fill-opacity", "0" )
                                     .attr("fill", "white")
@@ -662,6 +708,7 @@
                   d3.select("#ped_header").selectAll("*").remove();
 
                   if (scores == "all" && wages == "all" && income == "all") {
+                    side_legend.style("visibility", "hidden")
                     console.log("all")
                       var filtered = college_filtered;
                       d3.select("#home_header").append("span").style("color", "coral").text(`${Math.round(home["yes"]/(home["no"]+home["yes"])*100)}% of students'`);
@@ -670,11 +717,12 @@
                       d3.select("#eth_header").append("text").text(` were underrepresented minorities.`)
                       d3.select("#ped_header").append("span").style("color", "coral").text(`${all_parents}% of students`);
                       d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
-                      ped_chartArea_filter.attr("visibility", "hidden")
-                      ped_outlineArea_filter.attr("visibility", "hidden")
-                      eth_filterArea.attr("visibility", "hidden")
+                      ped_chartArea_filter.selectAll("*").remove()
+                      ped_outlineArea_filter.selectAll("*").remove()
+                      eth_filterArea.selectAll("*").remove()
                   }
                   else {
+                    side_legend.style("visibility", "visible")
                       var filtered = college_filtered.filter(function(d){return incomeCheck(income, d) && wagesCheck(wages, d) && scoresCheck(scores, d)})
                       console.log(filtered)
 
@@ -767,7 +815,7 @@
                                                 .attr("amt", d => d[1])
                                                 .attr("x", d => ethScale(d[0])-8)
                                                 .attr("y", d => freqScale(d[1]))
-                                                .attr("height", d => chartHeight - freqScale(d[1] - 250))
+                                                .attr("height", d => chartHeight - freqScale(d[1]) - 100)
                                                 .attr("width", 16)
                                                 .attr("fill", "RebeccaPurple" );
 
@@ -778,17 +826,16 @@
                         d3.select("#ped_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((one_fil + both_fil)/Object.keys(filtered).length*100, 2)}% of these students`);
                         d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
                     }
+                  }
                     // give new data to circles
-                    createCircles(edu_chartArea, filtered, scoreScale, 'score')
-                    createCircles(bg_chartArea, filtered, wageScale, 'wage')
-                    updateSideHeader(Object.keys(filtered).length)
-                }
+                  createCircles(edu_chartArea, filtered, tuitionScale, 'tuition')
+                  createCircles(bg_chartArea, filtered, unempScale, 'unemp')
+                  updateSideHeader(Object.keys(filtered).length)
 
                   function updateSideHeader(size) {
                     var incomeSelector = d3.select("#income_selectButton").property("value")
                     var scoreSelector = d3.select("#scores_selectButton").property("value")
                     var wageSelector = d3.select("#wages_selectButton").property("value")
-
 
                     sideBarTitle.selectAll("*").remove()
                     if (incomeSelector == "all" && scoreSelector == "all" && wageSelector == "all") {
