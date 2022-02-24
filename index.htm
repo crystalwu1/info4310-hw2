@@ -51,27 +51,6 @@
           margin-left: 20px;
         }
 
-        .outline {
-          /* animation-duration: 3s;
-          animation-name: pulse;
-          animation-iteration-count: infinite; */
-
-        }
-
-        @keyframes pulse {
-        from {
-          stroke-width: 1px;
-        }
-
-        50% {
-        stroke-width: 2px;
-        }
-
-        to {
-          stroke-width: 1px;
-        }
-      }
-
       .graph_title {
         font-size: 20px;
       }
@@ -79,7 +58,6 @@
     </style>
 
     <body>
-        <!-- buttons -->
         <div id="wrapper" style="display:flex; margin: 2%; margin-top: 0">
           <div  style="width: 70%; margin: 1%">
             <div id="graph-wrapper" style="width:100%; display: flex;">
@@ -88,25 +66,24 @@
                 <h5> Lydia Kim (lmk225), Crystal Wu (cw683) </h5>
                 <p> In 1980, the National Center for Education Statistics conducted a longitudinal survey to observe the development of young people. We used a cross-section of the data from the original survey to investigate patterns in how far students moved to attend 4-year colleges and universities.</p>
               </div>
-              <!-- legend for gender color -->
+              <!-- legend for colors -->
               <div id="legend" style="margin-top: 11%; margin-left: 20px"></div>
               <div id="side-legend" style="margin-top: 11%"></div>
             </div>
 
-
+              <!-- scatterplots -->
               <div id="graph-wrapper" style="width:100%; display: flex; flex-wrap: wrap; justify-content: center">
                   <div style="height: auto">
                     <h2 class="graph_title">School Cost vs. Distance</h2>
-                    <!-- include low, med, and high -->
                     <svg id="edu_viz" height="400" width="450"></svg>
                   </div>
-
                   <div>
                     <h2 class="graph_title">Home Unemployment Rate vs. Distance</h2>
                     <svg id="bg_viz" height="400" width="450"></svg>
                   </div>
               </div>
 
+              <!-- dropdowns -->
               <div id="dropdowns" style="width:100%; display: flex; flex-wrap: wrap; margin-top: 20px; justify-content: center">
                 <b>School Tution:</b>
                 <select id="scores_selectButton">
@@ -122,6 +99,7 @@
                 </select>
               </div>
 
+              <!-- circle size radius legend -->
               <div id="score_legend" style="width:100%; display: flex; flex-wrap: wrap; margin-top: 20px; justify-content: center; height: 20px">
               </div>
 
@@ -137,8 +115,6 @@
             <div id="ped_mouseover" class="caption" style="height:50px; padding-top: 20px"></div>
             <svg id="ped_viz_filtered" height="35" width="400" style="overflow: visible;"></svg>
             <div id="my_dataviz"></div>
-            <!-- <svg id="home_viz" height="200" width="200" style="margin:20px"></svg> -->
-            <!-- <svg id="inc_viz" height="200" width="200" style="margin:20px"></svg> -->
         </div>
 
 
@@ -170,8 +146,7 @@
             const college_csv = await d3.csv("CollegeDistance.csv");
             console.log(college_csv);
 
-            let tuitions = []
-            let backgr = []
+
             // filter dataset
             // change types as necessary
             college_csv.forEach((d, i) => {
@@ -188,14 +163,28 @@
             college_filtered = college_csv.filter((d) => d["education"] === 12 );
             console.log(college_filtered);
 
+            // create extents and scales
+            const tuitionExtent = d3.extent(college_filtered, d => d['tuition']);
+            const tuitionScale = d3.scaleLinear().domain(tuitionExtent).range([0, chartWidth]);
+            const scoreExtent = d3.extent(college_filtered, d => d['score']);
+            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([2, 7]);
+            const unempExtent = d3.extent(college_filtered, d => d['unemp']);
+            const unempScale = d3.scaleLinear().domain(unempExtent).range([0, chartWidth]);
+            const distanceExtent = d3.extent(college_filtered, d => d['distance']);
+            // tried doing a log scale but didn't return valid numbers
+            const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
+
+            //calculate quantiles for scatterplots
+            let tuitions = []
+            let backgr = []
             college_filtered.forEach((d, i) => {
               tuitions.push(Number(d['tuition']));
               backgr.push(Number(d['unemp']));
             })
 
-            // group income values
-            // code found from https://github.com/d3/d3-array/blob/main/README.md#group
-            let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
+            const quantile_names = ["low", "medium", "high"]
+            tuitionScaleQuantile = d3.scaleQuantile().domain(tuitions).range(quantile_names)
+            backgrScaleQuantile = d3.scaleQuantile().domain(backgr).range(quantile_names)
 
             // add options to the income dropdown
             function createDropDown(selector, data, f) {
@@ -208,22 +197,9 @@
                 .attr("value", f) // corresponding value returned by the button
             }
 
-            // create extent
-            const tuitionExtent = d3.extent(college_filtered, d => d['tuition']);
-            const tuitionScale = d3.scaleLinear().domain(tuitionExtent).range([0, chartWidth]);
-            const scoreExtent = d3.extent(college_filtered, d => d['score']);
-            const scoreScale = d3.scaleLinear().domain(scoreExtent).range([2, 7]);
-            const unempExtent = d3.extent(college_filtered, d => d['unemp']);
-            const unempScale = d3.scaleLinear().domain(unempExtent).range([0, chartWidth]);
-            const distanceExtent = d3.extent(college_filtered, d => d['distance']);
-            // tried doing a log scale but didn't return valid numbers
-            const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
-
-            // add options to scores, wages dropdown
-            const quantile_names = ["low", "medium", "high"]
-            tuitionScaleQuantile = d3.scaleQuantile().domain(tuitions).range(quantile_names)
-            backgrScaleQuantile = d3.scaleQuantile().domain(backgr).range(quantile_names)
-
+            // group income values
+            // code found from https://github.com/d3/d3-array/blob/main/README.md#group
+            let incomeKeys = Array.from(d3.group(college_filtered, d => d.income), ([key, value]) => (key));
             createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
             createDropDown("#scores_selectButton", quantile_names, function (d) { return d; });
             createDropDown("#wages_selectButton", quantile_names, function (d) { return d; });
@@ -233,7 +209,7 @@
             var colors = ["hotpink", "deepskyblue"];
             const colorScale = d3.scaleOrdinal().domain(["female", "male"]).range(colors);
 
-            // create legend
+            // create gender legend
             let legend = d3.select("div#legend");
             legend = legend.selectAll("div.row")
                 .data(colorScale.domain())
@@ -257,6 +233,7 @@
                 .style("margin-left", "5px")
                 .text(function (d) { return d+"\n"; });
 
+            //create sidebar legend
             let side_legend = d3.select("div#side-legend");
             let side_legend_color = d3.scaleOrdinal().domain(["all", "selected"]).range(["coral", "RebeccaPurple"])
             side_legend = side_legend.selectAll("div.row")
@@ -283,6 +260,7 @@
 
             side_legend.style("visibility", "hidden")
 
+            //create test score radius legend
             let score_legend = d3.select("#score_legend")
             score_legend.append("text").text(`Student Test Score:  `).style("margin-right", "10px")
             score_legend.append("text").text(` ${Math.round(scoreExtent[0], 2)}`)
@@ -304,7 +282,7 @@
                 .attr("cx", 10)
                 .attr("cy", 10)
 
-
+            // create axes and gridlines for scatterplots
             let leftAxis = d3.axisLeft(distanceScale)
                 .tickFormat(d3.format(""));
             let leftGridlines = d3.axisLeft(distanceScale)
@@ -321,7 +299,6 @@
                 .tickSize(-chartHeight-10)
                 .tickFormat("");
 
-            // create axes and gridlines
             edu_annotations.append("g")
                 .attr("class", "y axis")
                 .attr("transform",`translate(${margin.left-10},${margin.top})`)
@@ -356,14 +333,12 @@
                 .attr("transform",`translate(${margin.left},${chartHeight+margin.top})`)
                 .call(bg_bottomGridlines);
 
-            // add axis labels
             edu_chartArea.append("text")
                 .attr("class", "x label")
                 .attr("text-anchor", "middle")
                 .style("font-size", 13)
                 .attr("x", chartWidth/2)
                 .attr("y", chartHeight + margin.top +25)
-                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
                 .text("School Tuition");
 
             edu_chartArea.append("text")
@@ -381,7 +356,6 @@
                 .style("font-size", 13)
                 .attr("x", chartWidth/2)
                 .attr("y", chartHeight + margin.top + 25)
-                // .attr("transform", "translate(" + (chartWidth / 2) + " ," + (chartHeight - margin.bottom) + ")")
                 .text("Home County Unemployment Rate");
 
             bg_chartArea.append("text")
@@ -393,7 +367,7 @@
                 .attr("transform", "rotate(-90)")
                 .text("Distance to College (mi)");
 
-          // function to create circles
+          // function to create circles for scatterplot
           function createCircles(chartArea, data, xScale, xCol) {
               let circles = chartArea.selectAll("circle.point").data(data)
               .join(enter => enter.append("circle")
@@ -415,7 +389,7 @@
 
 
 
-
+          //start sidebar graphs
           const eth_bar = d3.select("#eth_viz");
           const ped_bar = d3.select("#ped_viz_all");
           const ped_bar_filter = d3.select("#ped_viz_filtered")
@@ -437,13 +411,13 @@
               .attr("transform","translate("+5+","+5+")");
 
 
-          //Side Bar Graphs
           let sideBarTitle = d3.select("#sideBarTitle")
           sideBarTitle.selectAll("*").remove()
           sideBarTitle.append("text").text("Among ")
           sideBarTitle.append("span").text(`all ${Object.keys(college_filtered).length} students`).style("color", "coral");
           sideBarTitle.append("text").text(" surveyed...")
 
+          //count variables for filtered values
           var eth = {"hispanic": 0, "afam": 0, "other": 0}
           let eth2 = {"hispanic": 0, "afam": 0, "other": 0}
           var inc = {"low": 0, "high": 0}
@@ -497,7 +471,6 @@
             .attr("transform",`translate(${margin.left-10},${margin.top})`)
             .call(ethleftGridlines);
 
-            // X axis
             let ethbottomAxis = d3.axisBottom(ethScaleAxis)
             let ethbottomGridlines = d3.axisBottom(ethScale)
                                     .tickSize(-ethChartHeight-10)
@@ -549,15 +522,12 @@
                                         .transition().duration(100)
                                         .attr("stroke-width", "3")
                                         ethMouseover(d3.select(this).attr("label"), eth2)
-                                        d3.selectAll("rect.outline").style("animation-name", "none")
                                     })
                                     .on("mouseout", function(d) {
                                       d3.select(this)
                                         .transition().duration(100)
                                         .attr("stroke-width", 1)
-                                        .style("animation-name", "pulse")
                                         d3.select("#eth_mouseover").style("opacity", 0)
-                                        d3.selectAll("rect.outline").style("animation-name", "pulse")
                                     });
 
             function ethMouseover(label, eth2) {
@@ -621,13 +591,11 @@
                 d3.select(this)
                   highlightOther(d3.select(this).attr("label"))
                   pedMouseover(d3.select(this).attr("label"), one_fil, both_fil, none_fil)
-                  d3.selectAll("rect.outline").style("animation-name", "none")
               })
               .on("mouseout", function(d) {
                 d3.select(this)
                   hover.style("opacity", 0)
                   deselectOther(d3.select(this).attr("label"))
-                  d3.selectAll("rect.outline").style("animation-name", "pulse")
               })
 
             const hover = d3.select("#ped_mouseover")
@@ -635,6 +603,50 @@
             d3.select("#ped_header").append("span").style("color", "coral").text(`${all_parents}% of students`);
             d3.select("#ped_header").append("text").text(` had one or more parents that attended college.`)
 
+            function highlightOther(label) {
+              let all = ped_outlineArea
+              let filter = ped_outlineArea_filter
+
+              all.select(`#${label}`).transition().duration(100)
+              .attr("stroke-width", 3)
+              filter.select(`#${label}`).transition().duration(100)
+              .attr("stroke-width", 3)
+            }
+
+            function deselectOther(label) {
+              let all = ped_outlineArea
+              let filter = ped_outlineArea_filter
+
+              all.select(`#${label}`).transition().duration(100)
+              .attr("stroke-width", 1)
+              filter.select(`#${label}`).transition().duration(100)
+              .attr("stroke-width", 1)
+            }
+
+            function pedMouseover(label, one_fil, both_fil, none_fil) {
+              let all = (label == "none") ? none : (label == "one") ? one : both;
+              let all_percent = Math.round( (all) / Object.keys(college_filtered).length*100, 2)
+              hover.selectAll("*").remove()
+              if (dropdownDict["#scores_selectButton"] == "all" && dropdownDict["#wages_selectButton"] == "all" && dropdownDict["#income_selectButton"] == "all") {
+                hover.append("text").text(`Overall,  `);
+                hover.append("span").text(`${all_percent}% of students `).style("color", "coral");
+                hover.append("text").text(`had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college.`)
+              } else {
+                let filtered = (label == "none") ? none_fil : (label == "one") ? one_fil : both_fil
+                let filtered_percent = Math.round( (filtered) / (one_fil + both_fil + none_fil) *100, 2)
+                hover.append("span").text(`${filtered_percent}% of these students`).style("color", "RebeccaPurple");
+                hover.append("text").text(` had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college, compared to `)
+                hover.append("span").text(`${all_percent}% overall`).style("color", "coral");
+                hover.append("text").text(`.`)
+              }
+              hover.style("opacity", 1);
+            }
+
+
+
+
+
+            //Update Functions
               function incomeCheck(condition, data) {
                 if (condition == "all") {
                   return true
@@ -659,52 +671,10 @@
                 }
               }
 
-              function highlightOther(label) {
-                let all = ped_outlineArea
-                let filter = ped_outlineArea_filter
-
-                all.select(`#${label}`).transition().duration(100)
-                .attr("stroke-width", 3)
-                filter.select(`#${label}`).transition().duration(100)
-                .attr("stroke-width", 3)
-                // console.log(all.select("#both"))
-                // console.log(filter.select("#both"))
-              }
-
-              function deselectOther(label) {
-                let all = ped_outlineArea
-                let filter = ped_outlineArea_filter
-
-                all.select(`#${label}`).transition().duration(100)
-                .attr("stroke-width", 1)
-                filter.select(`#${label}`).transition().duration(100)
-                .attr("stroke-width", 1)
-              }
-
-              function pedMouseover(label, one_fil, both_fil, none_fil) {
-                let all = (label == "none") ? none : (label == "one") ? one : both;
-                let all_percent = Math.round( (all) / Object.keys(college_filtered).length*100, 2)
-                hover.selectAll("*").remove()
-                if (dropdownDict["#scores_selectButton"] == "all" && dropdownDict["#wages_selectButton"] == "all" && dropdownDict["#income_selectButton"] == "all") {
-                  hover.append("text").text(`Overall,  `);
-                  hover.append("span").text(`${all_percent}% of students `).style("color", "coral");
-                  hover.append("text").text(`had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college.`)
-                } else {
-                  let filtered = (label == "none") ? none_fil : (label == "one") ? one_fil : both_fil
-                  let filtered_percent = Math.round( (filtered) / (one_fil + both_fil + none_fil) *100, 2)
-                  hover.append("span").text(`${filtered_percent}% of these students`).style("color", "RebeccaPurple");
-                  hover.append("text").text(` had ${(label == "none") ? "no parents" : (label == "one") ? "one parent" : "both parents"} go to college, compared to `)
-                  hover.append("span").text(`${all_percent}% overall`).style("color", "coral");
-                  hover.append("text").text(`.`)
-                }
-                hover.style("opacity", 1);
-              }
-
 
               // code inspired from https://www.d3-graph-gallery.com/graph/line_filter.html
               // update scatter based on selection
               function update(dropdownDict) {
-                  // filter dataset based on button selection
                   let scores = dropdownDict["#scores_selectButton"];
                   let income = dropdownDict["#income_selectButton"];
                   let wages = dropdownDict["#wages_selectButton"];
@@ -728,6 +698,7 @@
                       eth_filterArea.selectAll("*").remove()
                   }
                   else {
+                    // filter dataset based on dropdown selection
                     side_legend.style("visibility", "visible")
                       var filtered = college_filtered.filter(function(d){return incomeCheck(income, d) && wagesCheck(wages, d) && scoresCheck(scores, d)})
                       console.log(filtered)
@@ -770,6 +741,7 @@
                             }
                         });
 
+                        //update sidebar graphs
                         ped_chartArea_filter.attr("visibility", "visible")
                         ped_outlineArea_filter.attr("visibility", "visible")
                         eth_filterArea.attr("visibility", "visible")
@@ -825,6 +797,7 @@
                                                 .attr("width", 16)
                                                 .attr("fill", "RebeccaPurple" );
 
+                        //update dynamic text
                         d3.select("#home_header").append("span").style("color", "RebeccaPurple").text(`${Math.round(home2["yes"]/Object.keys(filtered).length*100)}% of these students'`);
                         d3.select("#home_header").append("text").text(` families own homes.`)
                         d3.select("#eth_header").append("span").style("color", "RebeccaPurple").text(`${Math.round((eth2["afam"]+eth2["hispanic"])/(Object.keys(filtered).length)*100)}% of these students`);
@@ -838,6 +811,7 @@
                   createCircles(bg_chartArea, filtered, unempScale, 'unemp')
                   updateSideHeader(Object.keys(filtered).length)
 
+                  //update dynamic text
                   function updateSideHeader(size) {
                     var incomeSelector = d3.select("#income_selectButton").property("value")
                     var scoreSelector = d3.select("#scores_selectButton").property("value")
