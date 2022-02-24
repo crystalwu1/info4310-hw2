@@ -180,7 +180,7 @@
                 d['unemp'] = Number(d['unemp'])/100;
                 d['wage'] = Number(d['wage']);
                 d['distance'] = Number(d['distance'])*10;
-                d['tuition'] = Number(d['tuition']*1000);
+                d['tuition'] = Number(d['tuition'])*1000;
                 d['education'] = Number(d['education']);
             });
 
@@ -219,26 +219,10 @@
             // tried doing a log scale but didn't return valid numbers
             const distanceScale = d3.scaleLinear().domain(distanceExtent).range([chartHeight, 0]);
 
-            //lm is 33%, mh 66%. use extent below for min/max
-            tuition_lm = d3.quantile(tuitions, 0.33)
-            tuition_mh = d3.quantile(tuitions, 0.66)
-            backgr_lm = d3.quantile(backgr, 0.33)
-            backgr_mh = d3.quantile(backgr, 0.66)
-
-            console.log(tuition_lm, tuition_mh, backgr_lm, backgr_mh);
-
             // add options to scores, wages dropdown
             const quantile_names = ["low", "medium", "high"]
-            var score_dict = {
-                "low": tuition_lm,
-                "medium": tuition_mh,
-                "high": tuitionExtent[1]
-            };
-            var wage_dict = {
-                "low": backgr_lm,
-                "medium": backgr_mh,
-                "high": unempExtent[1]
-            };
+            tuitionScaleQuantile = d3.scaleQuantile().domain(tuitions).range(quantile_names)
+            backgrScaleQuantile = d3.scaleQuantile().domain(backgr).range(quantile_names)
 
             createDropDown("#income_selectButton", incomeKeys, function (d) { return d; });
             createDropDown("#scores_selectButton", quantile_names, function (d) { return d; });
@@ -662,24 +646,16 @@
               function wagesCheck(condition, data) {
                 if (condition == "all") {
                   return true
-                } else if (condition == "low"){
-                  return data.unemp < wage_dict["low"]
-                } else if (condition == "medium") {
-                  return data.unemp >= wage_dict["low"] && data.unemp < wage_dict["high"]
                 } else {
-                  return data.unemp >= wage_dict["high"]
+                  return backgrScaleQuantile(data.unemp) == condition
                 }
               }
 
               function scoresCheck(condition, data) {
                 if (condition == "all") {
                   return true
-                } else if (condition == "low"){
-                  return data.tuition < score_dict["low"]
-                } else if (condition == "medium") {
-                  return data.tuition >= score_dict["low"] && data.tuition < score_dict["high"]
                 } else {
-                  return data.tuition >= score_dict["high"]
+                  return tuitionScaleQuantile(data.tuition) == condition
                 }
               }
 
